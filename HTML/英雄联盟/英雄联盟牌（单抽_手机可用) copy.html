@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英雄联盟单抽</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* 添加呼吸发光动画 */
+        @keyframes frontBorderGlow {
+            0% {
+                border-color: rgba(94, 92, 252, 0.3);
+                box-shadow: 0 0 20px rgba(94, 92, 252, 0.3),
+                           inset 0 0 20px rgba(94, 92, 252, 0.3);
+            }
+            50% {
+                border-color: rgba(94, 92, 252, 0.8);
+                box-shadow: 0 0 40px rgba(94, 92, 252, 0.5),
+                           inset 0 0 40px rgba(94, 92, 252, 0.5);
+            }
+            100% {
+                border-color: rgba(94, 92, 252, 0.3);
+                box-shadow: 0 0 20px rgba(94, 92, 252, 0.3),
+                           inset 0 0 20px rgba(94, 92, 252, 0.3);
+            }
+        }
+
+        @keyframes backCardGlow {
+            0% {
+                box-shadow: 0 0 20px rgba(94, 92, 252, 0.3);
+                border-color: rgba(94, 92, 252, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(94, 92, 252, 0.6);
+                border-color: rgba(94, 92, 252, 0.8);
+            }
+            100% {
+                box-shadow: 0 0 20px rgba(94, 92, 252, 0.3);
+                border-color: rgba(94, 92, 252, 0.3);
+            }
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #0f0f0f; /* 恢复纯黑色背景 */
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .container{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            perspective: 1000px;
+            z-index: 2;
+        }
+        .card{
+            width: 240px;
+            height: 360px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s;
+            cursor: pointer;
+        }
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            /* 保证布局完全一致，防止翻转时内容跳动 */
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .card-front {
+            background-color: #5e5cfc;
+            color: rgba(0,0,0,1);
+            font-size: 8em;
+            font-weight: 700;
+            border: 10px solid rgba(94, 92, 252, 0.5);
+            animation: frontBorderGlow 2s ease-in-out infinite;
+        }
+        .card-front svg {
+            display: block;
+            margin: 0 auto;
+        }
+        .card-back {
+            background: rgba(94, 92, 252, 0.2);
+            transform: rotateY(180deg);
+            border: 2px solid rgba(94, 92, 252, 0.5);
+            color: #fff;
+            animation: backCardGlow 2s ease-in-out infinite;
+            backdrop-filter: blur(5px);
+        }
+        .card-title {
+            font-size: 2.3rem;
+            text-align: center;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(94, 92, 252, 0.5);
+        }
+        .card-position {
+            font-size: 1.5rem;
+            padding: 5px 15px;
+            border-radius: 15px;
+            min-width: 80px;
+            text-align: center;
+        }
+        .card-position.upright {
+            color: #ffd700;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+        }
+        .card-position.reversed {
+            color: #ff4d4d;
+            text-shadow: 0 0 5px rgba(255, 77, 77, 0.5);
+        }
+
+        /* 保留原有发光效果，添加背景色 */
+.card-position.tank {
+    color: #2ecc71;
+    text-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
+}
+.card-position.warrior {
+    color: #e67e22;
+    text-shadow: 0 0 5px rgba(230, 126, 34, 0.5);
+}
+.card-position.mage {
+    color: #747DF6;
+    text-shadow: 0 0 5px rgba(48, 87, 212, 0.5);
+}
+.card-position.support {
+    color: #1abc9c;
+    text-shadow: 0 0 5px rgba(26, 188, 156, 0.5);
+}
+.card-position.marksman {
+    color: #f1c40f;
+    text-shadow: 0 0 5px rgba(241, 196, 15, 0.5);
+}
+.card-position.assassin {
+    color: #c0392b;
+    text-shadow: 0 0 5px rgba(192, 57, 43, 0.5);
+}
+
+/* 保留原有彩蛋样式 */
+.card-position.upright {
+    color: #ffd700;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+    background-color: transparent; /* 透明背景 */
+}
+.card-description {
+    font-size: 1.7rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+    line-height: 1.6;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 10px 5px;
+}
+.card-description::-webkit-scrollbar {
+    width: 4px;
+}
+.card-description::-webkit-scrollbar-thumb {
+    background: rgba(94, 92, 252, 0.5);
+    border-radius: 10px;
+}
+
+        .card-back.tank {
+            animation: backCardGlow-tank 2s ease-in-out infinite;
+            border-color: #2ecc71;
+        }
+        @keyframes backCardGlow-tank {
+            0% {
+                box-shadow: 0 0 20px rgba(46,204,113,0.3);
+                border-color: rgba(46,204,113,0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(46,204,113,0.6);
+                border-color: rgba(46,204,113,0.8);
+            }
+            100% {
+                box-shadow: 0 0 20px rgba(46,204,113,0.3);
+                border-color: rgba(46,204,113,0.3);
+            }
+        }
+        .card-back.warrior {
+            animation: backCardGlow-warrior 2s ease-in-out infinite;
+            border-color: #e67e22;
+        }
+        @keyframes backCardGlow-warrior {
+            0% {
+                box-shadow: 0 0 20px rgba(230,126,34,0.3);
+                border-color: rgba(230,126,34,0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(230,126,34,0.6);
+                border-color: rgba(230,126,34,0.8);
+            }
+            100% {
+                box-shadow: 0 0 20px rgba(230,126,34,0.3);
+                border-color: rgba(230,126,34,0.3);
+            }
+        }
+        .card-back.mage {
+            animation: backCardGlow-mage 2s ease-in-out infinite;
+            border-color: #9b59b6;
+        }
+        @keyframes backCardGlow-mage {
+            0% {
+                box-shadow: 0 0 20px rgba(155,89,182,0.3);
+                border-color: rgba(155,89,182,0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(155,89,182,0.6);
+                border-color: rgba(155,89,182,0.8);
+            }
+            100% {
+                box-shadow: 0 0 20px rgba(155,89,182,0.3);
+                border-color: rgba(155,89,182,0.3);
+            }
+        }
+        .card-back.support {
+            animation: backCardGlow-support 2s ease-in-out infinite;
+            border-color: #1abc9c;
+        }
+        @keyframes backCardGlow-support {
+            0% {
+                box-shadow: 0 0 20px rgba(26,188,156,0.3);
+                border-color: rgba(26,188,156,0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(26,188,156,0.6);
+                border-color: rgba(26,188,156,0.8);
+            }
+            100% {
+                box-shadow: 0 0 20px rgba(26,188,156,0.3);
+                border-color: rgba(26,188,156,0.3);
+            }
+        }
+        .card-back.marksman {
+            animation: backCardGlow-marksman 2s ease-in-out infinite;
+            border-color: #f1c40f;
+        }
+        @keyframes backCardGlow-marksman {
+            0% {
+                box-shadow: 0 0 20px rgba(241,196,15,0.3);
+                border-color: rgba(241,196,15,0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(241,196,15,0.6);
+                border-color: rgba(241,196,15,0.8);
+            }
+            100% {
+                box-shadow: 0 0 20px rgba(241,196,15,0.3);
+                border-color: rgba(241,196,15,0.3);
+            }
+        }
+        .card-back.assassin {
+            animation: backCardGlow-assassin 2s ease-in-out infinite;
+            border-color: #c0392b;
+        }
+        @keyframes backCardGlow-assassin {
+            0% {
+                box-shadow: 0 0 20px rgba(192,57,43,0.3);
+                border-color: rgba(192,57,43,0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(192,57,43,0.6);
+                border-color: rgba(192,57,43,0.8);
+            }
+            100% {
+                box-shadow: 0 0 20px rgba(192,57,43,0.3);
+                border-color: rgba(192,57,43,0.3);
+            }
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-front">
+                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="85" height="85" viewBox="0 0 85 85">
+                    <image id="图层_1" data-name="图层 1" x="9" y="3" width="71" height="80" xlink:href="data:img/png;base64,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"/>
+                </svg>
+
+            </div>
+            <div class="card-back">
+                <h3 class="card-title"></h3>
+                <div class="card-description"></div>
+                <div class="card-position"></div>
+                
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 英雄联盟英雄数据
+const heroes = [
+    { name: "黑暗之女", title: "安妮", position: "法师" },
+    { name: "正义天使", title: "凯尔", position: "战士" },
+    { name: "祖安怒兽", title: "沃里克", position: "战士" },
+    { name: "狂战士", title: "奥拉夫", position: "战士" },
+    { name: "无极剑圣", title: "易", position: "刺客" },
+    { name: "雪原双子", title: "努努和威朗普", position: "坦克" },
+    { name: "正义巨像", title: "加里奥", position: "坦克" },
+    { name: "牛头酋长", title: "阿利斯塔", position: "坦克" },
+    { name: "卡牌大师", title: "崔斯特", position: "法师" },
+    { name: "符文法师", title: "瑞兹", position: "法师" },
+    { name: "德邦总管", title: "赵信", position: "战士" },
+    { name: "亡灵战神", title: "赛恩", position: "坦克" },
+    { name: "寒冰射手", title: "艾希", position: "射手" },
+    { name: "蛮族之王", title: "泰达米尔", position: "战士" },
+    { name: "赏金猎人", title: "厄运小姐", position: "射手" },
+    { name: "无畏战车", title: "厄加特", position: "战士" },
+    { name: "战争女神", title: "希维尔", position: "射手" },
+    { name: "武器大师", title: "贾克斯", position: "战士" },
+    { name: "诡术妖姬", title: "乐芙兰", position: "法师" },
+    { name: "众星之子", title: "索拉卡", position: "辅助" },
+
+    { name: "堕落天使", title: "莫甘娜", position: "辅助" },
+    { name: "猩红收割", title: "弗拉基米尔", position: "法师" },
+    { name: "迅捷斥候", title: "提莫", position: "射手" },
+    { name: "时光守护者", title: "基兰", position: "辅助" },
+    { name: "远古恐惧", title: "费德提克", position: "法师" },
+    { name: "麦林炮手", title: "崔丝塔娜", position: "射手" },
+    { name: "炼金术士", title: "辛吉德", position: "坦克" },
+    { name: "痛苦之拥", title: "伊芙琳", position: "刺客" },
+    { name: "琴瑟仙女", title: "娑娜", position: "辅助" },
+    { name: "巨魔之王", title: "特朗德尔", position: "战士" },
+    { name: "瘟疫之源", title: "图奇", position: "射手" },
+    { name: "虚空行者", title: "卡萨丁", position: "刺客" },
+    { name: "诺克萨斯统领", title: "斯维因", position: "法师" },
+    { name: "死亡颂唱者", title: "卡尔萨斯", position: "法师" },
+    { name: "虚空恐惧", title: "科加斯", position: "坦克" },
+    { name: "殇之木乃伊", title: "阿木木", position: "坦克" },
+    { name: "风暴之怒", title: "迦娜", position: "辅助" },
+    { name: "海洋之灾", title: "普朗克", position: "战士" },
+    { name: "刀锋舞者", title: "艾瑞莉娅", position: "战士" },
+    { name: "皮城女警", title: "凯特琳", position: "射手" },
+
+    { name: "蒸汽机器人", title: "布里茨", position: "辅助" },
+    { name: "熔岩巨兽", title: "墨菲特", position: "坦克" },
+    { name: "披甲龙龟", title: "拉莫斯", position: "坦克" },
+    { name: "英勇投弹手", title: "库奇", position: "射手" },
+    { name: "不祥之刃", title: "卡特琳娜", position: "刺客" },
+    { name: "冰晶凤凰", title: "艾尼维亚", position: "法师" },
+    { name: "天启者", title: "卡尔玛", position: "辅助" },
+    { name: "永恒梦魇", title: "魔腾", position: "刺客" },
+    { name: "恶魔小丑", title: "萨科", position: "刺客" },
+    { name: "瓦洛兰之盾", title: "塔里克", position: "辅助" },
+    { name: "扭曲树精", title: "茂凯", position: "坦克" },
+    { name: "祖安狂人", title: "蒙多医生", position: "战士" },
+    { name: "邪恶小法师", title: "维迦", position: "法师" },
+    { name: "荒漠屠夫", title: "雷克顿", position: "战士" },
+    { name: "德玛西亚皇子", title: "嘉文四世", position: "战士" },
+    { name: "水晶先锋", title: "斯卡纳", position: "战士" },
+    { name: "铁铠冥魂", title: "莫德凯撒", position: "战士" },
+    { name: "蜘蛛女皇", title: "伊莉丝", position: "法师" },
+    { name: "大发明家", title: "黑默丁格", position: "法师" },
+    { name: "牧魂人", title: "约里克", position: "战士" },
+
+    { name: "发条魔灵", title: "奥莉安娜", position: "法师" },
+    { name: "沙漠死神", title: "内瑟斯", position: "战士" },
+    { name: "离群之刺", title: "阿卡丽", position: "刺客" },
+    { name: "齐天大圣", title: "孙悟空", position: "战士" },
+    { name: "复仇焰魂", title: "布兰德", position: "法师" },
+    { name: "盲僧", title: "李青", position: "战士" },
+    { name: "暗夜猎手", title: "薇恩", position: "射手" },
+    { name: "机械公敌", title: "兰博", position: "法师" },
+    { name: "狂野女猎手", title: "奈德丽", position: "刺客" },
+    { name: "兽灵行者", title: "乌迪尔", position: "战士" },
+    { name: "圣锤之毅", title: "波比", position: "战士" },
+    { name: "酒桶", title: "古拉加斯", position: "战士" },
+    { name: "不屈之枪", title: "潘森", position: "战士" },
+    { name: "德玛西亚之力", title: "盖伦", position: "战士" },
+    { name: "曙光女神", title: "蕾欧娜", position: "辅助" },
+    { name: "虚空先知", title: "玛尔扎哈", position: "法师" },
+    { name: "刀锋之影", title: "泰隆", position: "刺客" },
+    { name: "狂暴之心", title: "凯南", position: "法师" },
+    { name: "魔蛇之拥", title: "卡西奥佩娅", position: "法师" },
+    { name: "探险家", title: "伊泽瑞尔", position: "射手" },
+
+    { name: "放逐之刃", title: "锐雯", position: "战士" },
+    { name: "深渊巨口", title: "克格莫", position: "射手" },
+    { name: "傲之追猎者", title: "雷恩加尔", position: "刺客" },
+    { name: "战争之影", title: "赫卡里姆", position: "战士" },
+    { name: "暮光之眼", title: "慎", position: "坦克" },
+    { name: "惩戒之箭", title: "韦鲁斯", position: "射手" },
+    { name: "虚空掠夺者", title: "卡兹克", position: "刺客" },
+    { name: "光辉女郎", title: "拉克丝", position: "法师" },
+    { name: "深海泰坦", title: "诺提勒斯", position: "坦克" },
+    { name: "诺克萨斯之手", title: "德莱厄斯", position: "战士" },
+    { name: "远古巫灵", title: "泽拉斯", position: "法师" },
+    { name: "龙血武姬", title: "希瓦娜", position: "战士" },
+    { name: "奥术先驱", title: "维克托", position: "法师" },
+    { name: "北地之怒", title: "瑟庄妮", position: "坦克" },
+    { name: "未来守护者", title: "杰斯", position: "战士" },
+    { name: "冰霜女巫", title: "丽桑卓", position: "法师" },
+    { name: "九尾妖狐", title: "阿狸", position: "法师" },
+    { name: "无双剑姬", title: "菲奥娜", position: "战士" },
+    { name: "皎月女神", title: "黛安娜", position: "法师" },
+    { name: "法外狂徒", title: "格雷福斯", position: "射手" },
+
+    { name: "爆破鬼才", title: "吉格斯", position: "法师" },
+    { name: "德玛西亚之翼", title: "奎因", position: "射手" },
+    { name: "潮汐海灵", title: "菲兹", position: "刺客" },
+    { name: "仙灵女巫", title: "璐璐", position: "辅助" },
+    { name: "暗黑元首", title: "辛德拉", position: "法师" },
+    { name: "不灭狂雷", title: "沃利贝尔", position: "战士" },
+    { name: "荣耀行刑官", title: "德莱文", position: "射手" },
+    { name: "铸星龙王", title: "奥瑞利安·索尔", position: "法师" },
+    { name: "影流之镰", title: "凯隐", position: "刺客" },
+    { name: "岩雀", title: "塔莉垭", position: "法师" },
+    { name: "河流之王", title: "塔姆", position: "辅助" },
+    { name: "暮光星灵", title: "佐伊", position: "法师" },
+    { name: "荆棘之兴", title: "婕拉", position: "法师" },
+    { name: "虚空之女", title: "卡莎", position: "射手" },
+    { name: "星籁歌姬", title: "萨勒芬妮", position: "辅助" },
+    { name: "迷失之牙", title: "纳尔", position: "战士" },
+    { name: "影哨", title: "阿克尚", position: "射手" },
+    { name: "虚空女皇", title: "贝尔维斯", position: "战士" },
+    { name: "戏命师", title: "烬", position: "射手" },
+    { name: "弗雷尔卓德之心", title: "布隆", position: "辅助" },
+
+    { name: "圣枪游侠", title: "卢锡安", position: "射手" },
+    { name: "青钢影", title: "卡蜜尔", position: "战士" },
+    { name: "涤魂圣枪", title: "赛娜", position: "辅助" },
+    { name: "影流之主", title: "劫", position: "刺客" },
+    { name: "狂厄蔷薇", title: "薇古丝", position: "法师" },
+    { name: "破败之王", title: "佛耶戈", position: "战士" },
+    { name: "生化魔人", title: "扎克", position: "坦克" },
+    { name: "永猎双子", title: "千珏", position: "射手" },
+    { name: "暴怒骑士", title: "克烈", position: "战士" },
+    { name: "疾风剑豪", title: "亚索", position: "战士" },
+    { name: "祖安花火", title: "泽丽", position: "射手" },
+    { name: "时间刺客", title: "艾克", position: "刺客" },
+    { name: "虚空之眼", title: "维克兹", position: "法师" },
+    { name: "暴走萝莉", title: "金克丝", position: "射手" },
+    { name: "元素女皇", title: "奇亚娜", position: "刺客" },
+    { name: "皮城执法官", title: "蔚", position: "战士" },
+    { name: "翠神", title: "艾翁", position: "辅助" },
+    { name: "镕铁少女", title: "芮尔", position: "坦克" },
+    { name: "暗裔剑魔", title: "亚托克斯", position: "战士" },
+    { name: "复仇之矛", title: "卡莉丝塔", position: "射手" },
+
+    { name: "血港鬼影", title: "派克", position: "辅助" },
+    { name: "唤潮鲛姬", title: "娜美", position: "辅助" },
+    { name: "星界游神", title: "巴德", position: "辅助" },
+    { name: "愁云使者", title: "薇古丝", position: "法师" },
+    { name: "沙漠皇帝", title: "阿兹尔", position: "法师" },
+    { name: "幻翎", title: "洛", position: "辅助" },
+    { name: "封魔剑魂", title: "永恩", position: "战士" },
+    { name: "魔法猫咪", title: "悠米", position: "辅助" },
+    { name: "逆羽", title: "霞", position: "射手" },
+    { name: "腕豪", title: "瑟提", position: "战士" },
+    { name: "沙漠玫瑰", title: "莎弥拉", position: "射手" },
+    { name: "山隐之焰", title: "奥恩", position: "坦克" },
+    { name: "含羞蓓蕾", title: "莉莉娅", position: "战士" },
+    { name: "魂锁典狱长", title: "锤石", position: "辅助" },
+    { name: "解脱者", title: "塞拉斯", position: "法师" },
+    { name: "灵罗娃娃", title: "格温", position: "战士" },
+    { name: "海兽祭司", title: "俄洛伊", position: "战士" },
+    { name: "万花通灵", title: "妮蔻", position: "法师" },
+    { name: "炼金男爵", title: "烈娜塔", position: "辅助" },
+    { name: "虚空遁地兽", title: "雷克塞", position: "战士" },
+    { name: "残月之肃", title: "厄斐琉斯", position: "射手" },
+    { name: "不羁之悦", title: "尼菈", position: "射手" },
+    { name: "纳祖芒荣赭", title: "奎桑提", position: "坦克" },
+    { name: "炽炎雅龙", title: "斯莫德", position: "射手" },
+    { name: "明烛", title: "米利欧", position: "辅助" },
+    { name: "异画师", title: "彗", position: "法师" },
+    { name: "百裂冥犬", title: "纳亚菲利", position: "刺客" },
+    { name: "流光镜影", title: "梅尔", position: "法师" },
+    { name: "铁血狼母", title: "安蓓萨", position: "战士" },
+    { name: "双界灵兔", title: "阿萝拉", position: "刺客" },
+    { name: "不破之誓", title: "芸阿娜", position: "这是一个彩蛋（并未上线）" },
+];
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+    const card = document.querySelector('.card');
+    let isFlipped = false;
+
+    card.addEventListener('click', () => {
+    if (!isFlipped) {
+        const randomHero = heroes[Math.floor(Math.random() * heroes.length)];
+        const positionElement = document.querySelector('.card-position');
+        const cardBack = document.querySelector('.card-back');
+        
+        // 设置英雄信息
+        document.querySelector('.card-title').textContent = randomHero.name;
+        document.querySelector('.card-description').textContent = randomHero.title;
+        positionElement.textContent = randomHero.position;
+        
+        // 根据 position 设置样式
+        positionElement.className = 'card-position'; // 先清除原有类
+        cardBack.className = 'card-back'; // 先清除原有职业类
+        if (randomHero.position === '这是一个彩蛋（并未上线）') {
+            positionElement.classList.add('upright');
+        } else {
+            // 添加定位对应的类
+            const positionClass = {
+                '坦克': 'tank',
+                '战士': 'warrior',
+                '法师': 'mage',
+                '辅助': 'support',
+                '射手': 'marksman',
+                '刺客': 'assassin'
+            }[randomHero.position];
+            if (positionClass) {
+                positionElement.classList.add(positionClass);
+                cardBack.classList.add(positionClass);
+            }
+        }
+        
+        card.classList.add('flipped');
+        isFlipped = true;
+    } else {
+        // 背面状态 - 重置卡片
+        card.classList.remove('flipped');
+        isFlipped = false;
+        
+        setTimeout(() => {
+            document.querySelector('.card-title').textContent = '';
+            document.querySelector('.card-description').textContent = '';
+            document.querySelector('.card-position').textContent = '';
+            document.querySelector('.card-position').className = 'card-position';
+            document.querySelector('.card-back').className = 'card-back';
+        }, 300);
+    }
+});
+});
+    </script>
+</body>
+</html>

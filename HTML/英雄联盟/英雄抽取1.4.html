@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>英雄抽取1.35版本 </title>
+<style>
+body {
+  max-width: 90%;
+  max-height: 100%;
+  margin: 0 auto;
+  background-color: #fff;
+  color: #000;
+  transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
+}
+.modal {
+  font-size: 18px;
+  border-radius: 18px;
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 15%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 200px;
+  background-color: #fff;
+  color: #000;
+  border: 1px solid #000;
+  padding: 10px;
+  text-align: center;
+  transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out, border-color 0.5s ease-in-out;
+}
+
+
+.dark-mode {
+  background-color: #000;
+  color: #fff;
+}
+
+.dark-mode .modal {
+  background-color: #000;
+  color: #fff;
+  border: 1px solid #fff;
+}
+
+
+button {
+  font-size: 15px;
+  border-radius: 15px;
+  background-color: white;  
+  border: 1px solid #000;
+  transition: width 1s ease-in-out;
+  transition: 0.75s;
+
+}
+button:hover{
+  color:#ffffff;
+  background-color: rgb(0, 0, 0);
+  border: 1px solid white;
+}
+.alert {
+  font-size: 30px;
+  border-radius: 15px;
+  text-align: center;
+  position: absolute;
+  top: 70%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+
+/* 消失动画 */
+animation: fadeout 0.5s;
+}
+.record {
+  font-size: 18px;
+  border-radius: 18px;
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 1150px;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  
+  background:linear-gradient(45deg,#6ED9E6,50%,#e69dde) ;
+  color: #000;
+  border: 1px solid #000;
+  padding: 10px;
+  text-align: center;
+}
+.record .record-item {
+  padding: 10px;
+  border-bottom: 1px solid rgb(0, 0, 0);
+}
+.record .record-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.boxfor {
+  padding: 10px;
+  font-size: 18px;
+  border-radius: 18px;
+  width: 300px;
+  height: 200px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 10px;
+  border: 1px solid #000;
+}
+
+button:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1;
+  top:25px;
+  left: 20px;
+}
+
+button:nth-child(2) {
+  grid-column: 2;
+  grid-row: 1;
+  left: 20px;
+  top:25px;
+}
+
+button:nth-child(3) {
+  grid-column: 1;
+  grid-row: 2;
+  left: 20px;
+  top:15px;
+}
+
+button:nth-child(4) {
+  grid-column: 2;
+  grid-row: 2;
+  left: 20px;
+  top:15px;
+}
+</style>
+</head>
+<body>
+<div class="alls">  
+  <div id="myModal" class="modal">
+    <p id="modalMessage">抽取您的英雄</p>
+  </div>
+
+  <div class="boxfor">
+   
+    <button onclick="SwitchingModes()"id="myButton" style="position:absolute;width:100px;height:50px;">深渊模式</button>
+
+    <button onclick="fn()" style="position:absolute;width:100px;height:50px;" >抽取</button>
+  
+    <button onclick="showRecords()" style="position:absolute;width:100px;height:50px;">查看记录</button>
+
+    <button onclick="Refresh()" style="position:absolute;width:100px;height:50px;">刷新</button>
+
+  </div>
+  
+</div>
+
+
+<script>
+  var mode = 1;  // 初始化模式为 1，代表英雄抽取模式
+
+  var flag = true; // 初始化一个标志位，表示是否刷新
+
+  var time; // 定义一个变量来存储 setInterval 的返回值
+
+  var count = 0; // 初始化点击次数为 0
+
+  var records = []; // 初始化一个数组来存储抽取记录
+
+
+  function SwitchingModes() {
+    if (mode == 1) {
+      mode = 2;
+      var data1 = ['黑暗之女', '正义天使', '祖安怒兽', '狂战士', '无极剑圣', '雪原双子', '正义巨像',
+  '牛头酋长', '卡牌大师', '符文法师', '德邦总管', '亡灵战神', '寒冰射手', '蛮族之王', '赏金猎人', 
+  '无畏战车', '战争女神', '武器大师', '诡术妖姬', '众星之子', '堕落天使', '猩红收割', '迅捷斥候',
+  '时光守护者', '远古恐惧', '麦林炮手', '炼金术士', '痛苦之拥', '琴瑟仙女', '巨魔之王', '瘟疫之源',
+  '虚空行者', '诺克萨斯统领', '死亡颂唱者', '虚空恐惧', '殇之木乃伊', '风暴之怒', '海洋之灾', 
+  '刀锋舞者', '皮城女警', '蒸汽机器人', '熔岩巨兽', '披甲龙龟', '英勇投弹手', '不祥之刃', 
+  '冰晶凤凰', '天启者', '永恒梦魇', '恶魔小丑', '瓦洛兰之盾', '扭曲树精', '祖安狂人',
+   '邪恶小法师', '荒漠屠夫', '德玛西亚皇子', '水晶先锋', '铁铠冥魂', '蜘蛛女皇', '大发明家',
+   '牧魂人', '发条魔灵', '沙漠死神', '离群之刺', '齐天大圣', '复仇焰魂', '盲僧', '暗夜猎手',
+    '机械公敌', '狂野女猎手', '兽灵行者', '圣锤之毅', '酒桶', '不屈之枪', '德玛西亚之力', 
+    '曙光女神', '虚空先知', '刀锋之影', '狂暴之心', '魔蛇之拥', '探险家', '放逐之刃', '深渊巨口',
+     '傲之追猎者', '战争之影', '暮光之眼', '惩戒之箭', '虚空掠夺者', '光辉女郎', '深海泰坦',
+      '诺克萨斯之手', '远古巫灵', '龙血武姬', '机械先驱', '北地之怒', '未来守护者', '冰霜女巫',
+       '九尾妖狐', '无双剑姬', '皎月女神', '法外狂徒', '爆破鬼才', '德玛西亚之翼', '潮汐海灵', 
+       '仙灵女巫', '暗黑元首', '不灭狂雷', '荣耀行刑官', '铸星龙王', '影流之镰', '岩雀', '河流之王',
+        '暮光星灵', '荆棘之兴', '虚空之女', '星籁歌姬', '迷失之牙', '影哨', '虚空女皇', '戏命师', 
+        '弗雷尔卓德之心', '圣枪游侠', '青钢影', '涤魂圣枪', '影流之主', '狂厄蔷薇', '破败之王', 
+        '生化魔人', '永猎双子', '暴怒骑士', '疾风剑豪', '祖安花火', '时间刺客', '虚空之眼', 
+        '暴走萝莉', '元素女皇', '皮城执法官', '翠神', '镕铁少女', '暗裔剑魔', '复仇之矛', '血港鬼影', 
+        '唤潮鲛姬', '星界游神', '愁云使者', '沙漠皇帝', '幻翎', '封魔剑魂', '魔法猫咪', '逆羽', '腕豪',
+         '沙漠玫瑰', '山隐之焰', '含羞蓓蕾', '魂锁典狱长', '解脱者', '灵罗娃娃', '海兽祭司', '万花通灵',
+          '炼金男爵', '虚空遁地兽', '残月之肃', '不羁之悦', '纳祖芒荣赭', '炽炎雅龙', '明烛', '异画师', '百裂冥犬'];
+
+      var data2 = ['强攻','致命节奏','迅捷步伐','征服者','电刑', '掠食者', '黑暗收割', '丛刃', '召唤：艾黎', '奥术彗星', '相位猛冲', '不灭之握', '余震', '守护者', '冰川增幅', '启封的秘籍', '先攻'];
+
+      var data3 = ['舒瑞娅的战歌', '无终恨意', '败魔', '引路者', '大天使之杖', '魔宗', '守护天使', '无尽之刃', 
+  '凡性的提醒', '幻影之舞', '日炎圣盾', '饮血剑', '贪欲九头蛇', '梅贾的窃魂卷', '基克的聚合', 
+  '斯特拉克的挑战护手', '振奋铠甲', '黑色切割者', '海克斯注力刚壁', '多米尼克领主的致意', '荆棘之甲', 
+  '三相之力', '骑士之誓', '狂徒铠甲', '冰霜之心', '心之钢', '纳什之牙', '卢安娜的飓风', '瑞莱的冰晶节杖',
+   '斯塔缇克电刃', '灭世者的死亡之帽', '凛冬之临', '智慧末刃', '疾射火炮', '鬼索的狂暴之刃',
+    '岚切', '虚空之杖', '巫妖之祸', '女妖面纱', '水银弯刀', '救赎', '幽梦之灵', '蜕生', '残疫', '朔极之矛',
+     '莫雷洛秘典', '黯影阔剑', '兰顿之兆', '海克斯科技火箭腰带', '破败王者之刃', '玛莫提乌斯之噬', '中娅沙漏',
+      '破舰者', '钢铁烈阳之匣', '界弓', '巨型九头蛇', '夜之锋刃', '炽热香炉', '夺萃之镰', '亡者的板甲', 
+      '米凯尔的祝福', '帝国指令', '自然之力', '视界专注', '星界驱驰', '裂隙制造者', '暗夜收割者', '恶魔之拥',
+       '破碎王后之冕', '影焰', '风暴狂涌', '死亡之舞', '焚天', '挺进破坏者', '炼金朋克链锯剑', '流水法杖', 
+       '月石再生器', '海力亚的回响', '黎明核心', '兰德里的折磨', '卢登的配枪', '时光之杖', '冰脉护手',
+        '璀璨回响', '千变者贾修', '海妖杀手', '不朽盾弓', '纳沃利迅刃', '襄瑞尔达的怨恨', '公理圆瓜', 
+        '亵渎九头蛇', '巨蛇之牙', '动感电三轮', '禁忌时机', '深渊面县', '狂妄', '兰德里的挽歌', '厌恨锁链'];
+      var data6 = ['疾跑','治疗术','点燃','屏障','闪现','清晰术','虚弱','传送','净化','惩戒'];
+      var data7 = ['疾跑','治疗术','点燃','屏障','闪现','清晰术','虚弱','传送','净化','惩戒'];
+      var data8 = ['上路','打野','中路','下路','辅助'];
+      var button = document.getElementById("myButton");
+    button.innerHTML = "峡谷模式";
+    } else if (mode == 2) {
+      mode = 1;
+      var data1 = ['黑暗之女', '正义天使', '祖安怒兽', '狂战士', '无极剑圣', '百裂冥犬'];
+
+      var data2 = ['强攻','致命节奏','迅捷步伐','征服者','电刑', '掠食者', '黑暗收割', '丛刃', '召唤：艾黎', '奥术彗星', '相位猛冲', '不灭之握', '余震', '守护者', '冰川增幅', '启封的秘籍', '先攻'];
+
+      var data3 = ['舒瑞娅的战歌', '无终恨意', '败魔', '薄暮法袍', '引路者'];
+      var data4 = ['疾跑','治疗术','点燃','屏障','闪现','清晰术','虚弱','雪球','净化'];
+      var data5 = ['疾跑','治疗术','点燃','屏障','闪现','清晰术','虚弱','雪球','净化'];
+      var button = document.getElementById("myButton");
+    button.innerHTML = "深渊模式";
+    }
+  }
+  
+  function clock() {
+    // 定义 clock 函数，每隔 30 毫秒执行一次
+
+    var data1 = ['黑暗之女', '正义天使', '祖安怒兽', '狂战士', '无极剑圣', '百裂冥犬'];
+
+    var data2 = ['强攻','致命节奏','迅捷步伐','征服者','电刑', '掠食者', '黑暗收割', '丛刃', '召唤：艾黎', '奥术彗星', '相位猛冲', '不灭之握', '余震', '守护者', '冰川增幅', '启封的秘籍', '先攻'];
+
+    var data3 = ['舒瑞娅的战歌', '无终恨意', '败魔', '薄暮法袍', '引路者'];
+    var data4 = ['疾跑','治疗术','点燃','屏障','闪现','清晰术','虚弱','雪球','净化'];
+    var data5 = ['疾跑','治疗术','点燃','屏障','闪现','清晰术','虚弱','雪球','净化'];
+
+    var data6 = ['疾跑','治疗术','点燃','屏障','闪现','清晰术','虚弱','传送','净化','惩戒'];
+    var data7 = ['疾跑','治疗术','点燃','屏障','闪现','清晰术','虚弱','传送','净化','惩戒'];
+    var data8 = ['上路','打野','中路','下路','辅助'];
+
+    var message1 = ['英雄:'];
+    var message2 = ['符文:'];
+    var message3 = ['装备:'];
+    var message4 = ['技能1:'];
+    var message5 = ['技能2:'];
+    var message8 = ['您的位置:'];
+
+    if (count >= 5) {
+  // 创建一个新的 div 元素作为弹窗
+  var alert = document.createElement("div");
+
+  // 设置弹窗的类名
+  alert.classList.add("alert");
+
+  // 设置弹窗的内容
+  alert.innerHTML = "请查看记录";
+
+  // 将弹窗添加到 body 元素中
+  document.body.appendChild(alert);
+
+  // 延时 2 秒后隐藏弹窗
+  setTimeout(function() {
+    alert.style.display = "none";
+  }, 2500);
+
+  // 停止刷新和抽取
+  time = window.clearInterval(time);
+  document.getElementById("button_text").innerHTML = '抽取';
+  flag = true;
+}
+
+    if (flag) {
+      // 当刷新时，获取随机数据并更新记录
+      var i = Math.floor(Math.random() * data1.length); // 使用 Math.floor() 获取随机索引
+
+      var t = Math.floor(Math.random() * data2.length); 
+      var z = Math.floor(Math.random() * data3.length);
+
+      if (mode == 1) {
+        // 英雄抽取模式
+        var j = Math.floor(Math.random() * data4.length);
+        while (j == i) {
+          j = Math.floor(Math.random() * data4.length);
+        }
+        var k = Math.floor(Math.random() * data5.length);
+        while (k == i || k == j) {
+          k = Math.floor(Math.random() * data5.length);
+        }
+
+        var message = message1[0] + data1[i] + '<br>' + message2[0] + data2[t] + '<br>' + message3[0] + data3[z] + '<br>' + message4[0] + data4[j] + '<br>' + message5[0] + data5[k]  + '<br>' +  '<br>抽取次数：' + ++count;
+      } else if (mode == 2) {
+        // 位置抽取模式
+        var j = Math.floor(Math.random() * data6.length);
+        while (j == i) {
+          j = Math.floor(Math.random() * data6.length);
+        }
+        var k = Math.floor(Math.random() * data7.length);
+        while (k == i || k == j) {
+          k = Math.floor(Math.random() * data7.length);
+        }
+
+        var message = message1[0] + data1[i] + '<br>' + message2[0] + data2[t] + '<br>' + message3[0] + data3[z] + '<br>' + message4[0] + data6[j] + '<br>' + message5[0] + data7[k]  + '<br>' + message8[0] + data8[Math.floor(Math.random() * data8.length)]  + '<br>抽取次数：' + ++count;
+      }
+
+      records.push(message);
+
+      var modal = document.getElementById("myModal");
+      var modalMessage = document.getElementById("modalMessage");
+      modalMessage.innerHTML = message; // 正确的语法
+      modal.style.display = "block"; // 显示模态框
+    }
+  }
+  
+  function fn() {
+    // 定义 fn 函数，当点击按钮时执行
+  
+    var button = document.getElementById("button_text");
+  
+    if (flag) {
+      // 当标志位为 true 时，开始刷新
+      time = self.setInterval("clock()", 30);
+      button.innerHTML = '停止';
+      flag = false;
+      count++; // Increment the count
+      document.getElementById('count').innerHTML = count; // Display the count
+      records = []; // 清空记录数组
+    } else {
+      // 当标志位为 false 时，停止刷新
+      time = window.clearInterval(time);
+      button.innerHTML = '抽取';
+      flag = true;
+    }
+  }
+  
+  function showRecords() {
+  // 定义 showRecords 函数，当点击查看记录按钮时执行
+
+  // 创建一个新的 div 元素作为弹窗
+  var alert = document.createElement("div");
+
+  // 设置弹窗的类名
+  alert.classList.add("record");
+
+  // 设置弹窗的内容
+  var title = document.createElement("div");
+  title.classList.add("record-item");
+  title.innerHTML = "<h3>最近五次的记录</h3>";
+
+  var recordsContainer = document.createElement("div");
+  recordsContainer.classList.add("record-items");
+  for (var i = 0; i < records.length; i++) {
+    var record = document.createElement("div");
+    record.classList.add("record-item");
+    record.innerHTML = records[i];
+    recordsContainer.appendChild(record);
+  }
+
+  alert.appendChild(title);
+  alert.appendChild(recordsContainer);
+
+  // 将弹窗添加到 body 元素中
+  document.body.appendChild(alert);
+
+  // 动态调整弹窗的高度
+  alert.style.height = alert.scrollHeight + "px";
+}
+
+
+function Refresh() {
+  window.location.href = window.location.href;
+}
+
+  </script>
+
+</body>
+</html>
