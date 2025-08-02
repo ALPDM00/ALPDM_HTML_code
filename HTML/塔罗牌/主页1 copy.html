@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>塔罗牌占卜</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: #fff;
+            padding: 20px;
+            overflow-x: hidden;
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #e94560;
+            margin-bottom: 30px;
+        }
+
+        .question-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            margin-bottom: 10px;
+            resize: vertical;
+        }
+
+        .reading-positions {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+            min-height: 400px;
+        }
+
+        .position-card {
+            width: 220px;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+        }
+
+        .card-placeholder {
+            width: 200px;
+            height: 350px;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            margin: 10px auto;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .deck-container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 500px;
+            perspective: 1000px;
+            margin: 50px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+        }
+
+        .deck {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 500px;
+            perspective: 1000px;
+        }
+
+        .tarot-card {
+            position: absolute;
+            width: 220px;
+            height: 320px;
+            background-color: #5e5cfc;
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #000;
+            font-size: 7rem;
+            font-weight: 800;
+            border: 10px solid rgba(41, 0, 138, 0.8);
+            outline: 1px solid #000;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                        z-index 0.6s ease;
+            transform-origin: 50% 100%;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .tarot-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3));
+            border-radius: 12px;
+            pointer-events: none;
+        }
+
+        .tarot-card::after {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: url('https://i.imgur.com/K3PH0sF.jpg') center/30% repeat;
+            opacity: 0.1;
+            animation: backgroundScroll 30s linear infinite;
+        }
+
+        @keyframes backgroundScroll {
+            from {
+                transform: translateX(0) translateY(0);
+            }
+            to {
+                transform: translateX(-50%) translateY(-50%);
+            }
+        }
+
+        .tarot-card.selected {
+            opacity: 0.2;
+            pointer-events: none;
+            transform: scale(0.9);
+        }
+
+        .tarot-card.selected::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+        }
+
+        .deck:hover .tarot-card {
+            transform: rotate(calc(var(--i) * 1.5deg)) 
+                       translate(calc(var(--i) * 70px), -80px);
+            z-index: calc(10 - var(--i));
+        }
+
+        .tarot-card:hover {
+            transform: rotate(calc(var(--i) * 1.5deg)) 
+                       translate(calc(var(--i) * 70px), -100px) 
+                       scale(1.1);
+            z-index: 20;
+        }
+
+        @media (max-width: 900px) {
+            .tarot-card {
+                width: 180px;
+                height: 260px;
+                font-size: 4rem;
+            }
+            
+            .deck:hover .tarot-card {
+                transform: rotate(calc(var(--i) * 1.5deg)) 
+                           translate(calc(var(--i) * 50px), -60px);
+            }
+            
+            .tarot-card:hover {
+                transform: rotate(calc(var(--i) * 1.5deg)) 
+                           translate(calc(var(--i) * 50px), -80px)
+                           scale(1.1);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .deck {
+                transform: scale(0.7);
+            }
+        }
+
+        .selected-card {
+            position: fixed;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        .reading-positions {
+            position: relative;
+            z-index: 1;
+        }
+
+        .deck-container {
+            position: relative;
+            z-index: 0;
+        }
+
+        @keyframes cardFloat {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .tarot-card:hover {
+            animation: cardFloat 1s ease-in-out infinite;
+        }
+
+        .magic-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFade 1.5s ease-out forwards;
+        }
+
+        @keyframes particleFade {
+            0% {
+                transform: translate(0, 0) scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(
+                    calc(100px * (random() - 0.5)),
+                    calc(100px * (random() - 0.5))
+                ) scale(1);
+                opacity: 0;
+            }
+        }
+
+        .selected-card {
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.5s ease;
+        }
+
+        .selected-card.appear {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        button {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #c81e3f;
+        }
+
+        .analysis {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+
+        .additional-card {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>塔罗牌占卜</h1>
+        
+        <div class="question-section">
+            <textarea id="question" rows="3" placeholder="请输入你想要解答的问题..."></textarea>
+        </div>
+
+        <div class="reading-positions">
+            <div class="position-card" id="past">
+                <h3>过去</h3>
+                <div class="card-placeholder"></div>
+            </div>
+            <div class="position-card" id="present">
+                <h3>现在</h3>
+                <div class="card-placeholder"></div>
+            </div>
+            <div class="position-card" id="future">
+                <h3>未来</h3>
+                <div class="card-placeholder"></div>
+            </div>
+        </div>
+
+        <div class="deck-container">
+            <div id="deck" class="deck"></div>
+        </div>
+
+        <div class="analysis" id="analysis" style="display: none;">
+            <h2>塔罗牌解析</h2>
+            <p id="analysis-text"></p>
+            <div class="additional-card">
+                <button onclick="drawAdditionalCard()">抽取建议牌</button>
+                <div class="card" id="additional-card" style="display: none;" onclick="flipCard(this, 3)">
+                    <div class="card-inner">
+                        <div class="card-front"></div>
+                        <div class="card-back">
+                            <h3>建议</h3>
+                            <p class="card-name"></p>
+                            <p class="card-meaning"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化变量
+        let selectedPositions = {
+            past: null,
+            present: null,
+            future: null
+        };
+        let selectedCards = [];
+
+        // 塔罗牌数据
+        const majorArcana = [
+            { name: "愚者", meaning: "新的开始、冒险、自发性" },
+            { name: "魔术师", meaning: "创造力、技能、意志力" },
+            { name: "女祭司", meaning: "直觉、神秘、内在知识" },
+            { name: "女皇", meaning: "丰饶、母性、创造力" },
+            { name: "皇帝", meaning: "权威、领导力、控制" },
+            { name: "教皇", meaning: "传统、信仰、指导" },
+            { name: "恋人", meaning: "选择、爱情、和谐" },
+            { name: "战车", meaning: "胜利、意志力、自信" },
+            { name: "力量", meaning: "勇气、耐心、控制" },
+            { name: "隐士", meaning: "内省、智慧、孤独" },
+            { name: "命运之轮", meaning: "变化、机会、命运" },
+            { name: "正义", meaning: "平衡、真理、因果" },
+            { name: "倒吊人", meaning: "牺牲、新视角、等待" },
+            { name: "死神", meaning: "结束、转变、重生" },
+            { name: "节制", meaning: "平衡、适度、和谐" },
+            { name: "恶魔", meaning: "束缚、诱惑、物质主义" },
+            { name: "塔", meaning: "突变、崩塌、启示" },
+            { name: "星星", meaning: "希望、灵感、指引" },
+            { name: "月亮", meaning: "幻想、恐惧、直觉" },
+            { name: "太阳", meaning: "快乐、成功、活力" },
+            { name: "审判", meaning: "重生、觉醒、改变" },
+            { name: "世界", meaning: "完成、圆满、统一" }
+        ];
+
+        const minorArcana = [
+            // 权杖牌组
+            { name: "权杖王牌", meaning: "新机会、灵感、创造力的开始" },
+            { name: "权杖二", meaning: "规划、决策、平衡" },
+            { name: "权杖三", meaning: "探索、冒险、扩张" },
+            { name: "权杖四", meaning: "稳定、休息、成就" },
+            { name: "权杖五", meaning: "竞争、冲突、挑战" },
+            { name: "权杖六", meaning: "胜利、成功、认可" },
+            { name: "权杖七", meaning: "勇气、毅力、防御" },
+            { name: "权杖八", meaning: "行动、速度、变化" },
+            { name: "权杖九", meaning: "力量、准备、坚持" },
+            { name: "权杖十", meaning: "负担、压力、责任" },
+            { name: "权杖侍从", meaning: "热情、冒险、消息" },
+            { name: "权杖骑士", meaning: "行动、热情、冲动" },
+            { name: "权杖皇后", meaning: "热情、魅力、自信" },
+            { name: "权杖国王", meaning: "领导、创造、魅力" },
+            
+            // 圣杯牌组
+            { name: "圣杯王牌", meaning: "情感、直觉、新的感情" },
+            { name: "圣杯二", meaning: "平衡、选择、伙伴关系" },
+            { name: "圣杯三", meaning: "庆祝、欢乐、团体" },
+            { name: "圣杯四", meaning: "沉思、倦怠、停滞" },
+            { name: "圣杯五", meaning: "失望、悲伤、遗憾" },
+            { name: "圣杯六", meaning: "怀旧、回忆、重聚" },
+            { name: "圣杯七", meaning: "选择、幻想、迷茫" },
+            { name: "圣杯八", meaning: "放弃、转变、追求" },
+            { name: "圣杯九", meaning: "满足、幸福、愿望实现" },
+            { name: "圣杯十", meaning: "家庭、和谐、圆满" },
+            { name: "圣杯侍从", meaning: "消息、创意、机会" },
+            { name: "圣杯骑士", meaning: "浪漫、魅力、提议" },
+            { name: "圣杯皇后", meaning: "慈爱、关怀、同情" },
+            { name: "圣杯国王", meaning: "智慧、艺术、平和" },
+
+            // 宝剑牌组
+            { name: "宝剑王牌", meaning: "突破、清晰、真理" },
+            { name: "宝剑二", meaning: "选择、平衡、决定" },
+            { name: "宝剑三", meaning: "心痛、分离、悲伤" },
+            { name: "宝剑四", meaning: "休息、恢复、冥想" },
+            { name: "宝剑五", meaning: "失败、冲突、损失" },
+            { name: "宝剑六", meaning: "过渡、改变、旅程" },
+            { name: "宝剑七", meaning: "欺骗、策略、秘密" },
+            { name: "宝剑八", meaning: "困境、限制、障碍" },
+            { name: "宝剑九", meaning: "焦虑、担忧、恐惧" },
+            { name: "宝剑十", meaning: "结束、失败、痛苦" },
+            { name: "宝剑侍从", meaning: "警觉、观察、消息" },
+            { name: "宝剑骑士", meaning: "行动、思考、冲突" },
+            { name: "宝剑皇后", meaning: "独立、智慧、直接" },
+            { name: "宝剑国王", meaning: "权威、真理、正义" },
+
+            // 钱币牌组
+            { name: "钱币王牌", meaning: "机会、繁荣、物质" },
+            { name: "钱币二", meaning: "平衡、适应、变化" },
+            { name: "钱币三", meaning: "技能、工作、合作" },
+            { name: "钱币四", meaning: "控制、稳定、保守" },
+            { name: "钱币五", meaning: "困难、贫困、担忧" },
+            { name: "钱币六", meaning: "给予、接受、分享" },
+            { name: "钱币七", meaning: "评估、等待、投资" },
+            { name: "钱币八", meaning: "技能、努力、进展" },
+            { name: "钱币九", meaning: "独立、享受、奢华" },
+            { name: "钱币十", meaning: "财富、安全、传统" },
+            { name: "钱币侍从", meaning: "学习、消息、机会" },
+            { name: "钱币骑士", meaning: "工作、责任、例行" },
+            { name: "钱币皇后", meaning: "实用、丰富、安全" },
+            { name: "钱币国王", meaning: "富有、成功、实现" }
+        ];
+
+        // 初始化函数
+        function initializeDeck() {
+            const deck = document.getElementById('deck');
+            const allCards = [...majorArcana, ...minorArcana];
+            
+            // 随机打乱牌组并只取前25张
+            const shuffledCards = [...allCards]
+                .sort(() => Math.random() - 0.5)
+                .slice(0, 25);
+            
+            shuffledCards.forEach((card, index) => {
+                const cardElement = createCardElement(card, index);
+                deck.appendChild(cardElement);
+            });
+        }
+
+        function createCardElement(card, index) {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'tarot-card';
+            // 计算居中的偏移量，使卡片在中心展开
+            const totalCards = 25; // 修改为固定25张卡片
+            const offset = Math.floor(totalCards / 2);
+            cardElement.style.setProperty('--i', index - offset);
+            // 存储卡片信息但不显示
+            cardElement.dataset.cardName = card.name;
+            cardElement.dataset.cardMeaning = card.meaning;
+            cardElement.textContent = '✧'; // 添加符号作为卡片背面的装饰
+            cardElement.addEventListener('click', () => selectCard(cardElement, card));
+            return cardElement;
+        }
+
+        function selectCard(cardElement, card) {
+            const question = document.getElementById('question').value;
+            if (!question) {
+                alert('请先输入你的问题！');
+                return;
+            }
+
+            if (selectedCards.includes(card)) {
+                return;
+            }
+
+            let position;
+            if (!selectedPositions.past) position = 'past';
+            else if (!selectedPositions.present) position = 'present';
+            else if (!selectedPositions.future) position = 'future';
+            else return;
+
+            selectedCards.push(card);
+            selectedPositions[position] = card;
+
+            // 创建新卡片到目标位置
+            const targetPlaceholder = document.querySelector(`#${position} .card-placeholder`);
+            const clone = document.createElement('div');
+            clone.className = 'tarot-card selected-card';
+            clone.textContent = card.name;
+
+            // 设置初始样式
+            clone.style.position = 'absolute';
+            clone.style.top = '0';
+            clone.style.left = '0';
+            clone.style.width = '100%';
+            clone.style.height = '100%';
+            clone.style.opacity = '0';
+            clone.style.transform = 'scale(0.8)';
+            targetPlaceholder.style.position = 'relative';
+            targetPlaceholder.appendChild(clone);
+
+            // 原卡片添加选中效果
+            cardElement.classList.add('selected');
+
+            // 添加魔法粒子效果
+            createMagicParticles(cardElement);
+
+            // 延迟后在目标位置淡入
+            setTimeout(() => {
+                clone.style.transition = 'all 1s ease';
+                clone.style.opacity = '1';
+                clone.style.transform = 'scale(1)';
+                clone.style.background = 'linear-gradient(135deg, #9c27b0, #673ab7)';
+                clone.style.color = 'rgba(255, 255, 255, 1)';
+                
+                if (Object.values(selectedPositions).every(pos => pos !== null)) {
+                    showAnalysis();
+                }
+            }, 500);
+        }
+
+        function showAnalysis() {
+            const question = document.getElementById('question').value;
+            let analysis = `关于你的问题："${question}"\n\n`;
+            analysis += `过去：${selectedPositions.past.name} - ${selectedPositions.past.meaning}\n`;
+            analysis += `现在：${selectedPositions.present.name} - ${selectedPositions.present.meaning}\n`;
+            analysis += `未来：${selectedPositions.future.name} - ${selectedPositions.future.meaning}\n`;
+
+            document.getElementById('analysis').style.display = 'block';
+            document.getElementById('analysis-text').innerHTML = analysis.replace(/\n/g, '<br>');
+        }
+
+        function drawAdditionalCard() {
+            const allCards = [...majorArcana, ...minorArcana];
+            const availableCards = allCards.filter(card => !selectedCards.includes(card));
+            
+            if (availableCards.length === 0) {
+                alert('没有更多可用的牌了！');
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * availableCards.length);
+            const additionalCard = availableCards[randomIndex];
+
+            const additionalCardElement = document.getElementById('additional-card');
+            additionalCardElement.style.display = 'block';
+            additionalCardElement.querySelector('.card-name').textContent = additionalCard.name;
+            additionalCardElement.querySelector('.card-meaning').textContent = additionalCard.meaning;
+
+            let currentAnalysis = document.getElementById('analysis-text').innerHTML;
+            currentAnalysis += `<br><br>建议牌：${additionalCard.name} - ${additionalCard.meaning}`;
+            document.getElementById('analysis-text').innerHTML = currentAnalysis;
+        }
+
+        // 创建魔法粒子效果函数
+        function createMagicParticles(sourceElement) {
+            const rect = sourceElement.getBoundingClientRect();
+            const particlesContainer = document.createElement('div');
+            particlesContainer.style.position = 'fixed';
+            particlesContainer.style.left = rect.left + 'px';
+            particlesContainer.style.top = rect.top + 'px';
+            particlesContainer.style.width = rect.width + 'px';
+            particlesContainer.style.height = rect.height + 'px';
+            particlesContainer.style.pointerEvents = 'none';
+            document.body.appendChild(particlesContainer);
+
+            // 创建20个粒子
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'magic-particle';
+                particlesContainer.appendChild(particle);
+
+                // 随机位置和动画延迟
+                const x = Math.random() * rect.width;
+                const y = Math.random() * rect.height;
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.animationDelay = Math.random() * 0.5 + 's';
+            }
+
+            // 动画结束后移除粒子容器
+            setTimeout(() => {
+                particlesContainer.remove();
+            }, 1500);
+        }
+
+        // 页面加载时初始化牌组
+        window.onload = initializeDeck;
+    </script>
+</body>
+</html>

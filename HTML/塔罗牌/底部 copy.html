@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>塔罗牌抽取</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: #fff;
+            padding: 20px 20px 0 20px; /* 移除底部内边距 */
+            overflow-x: hidden;
+        }
+
+        /* 添加展示区域的样式 */
+        .display-area {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: 40px;
+            gap: 20px;
+            padding: 0 20px;
+        }
+
+        .display-box {
+            width: 280px;
+            height: 400px;
+            background: rgba(94, 92, 252, 0.1);
+            border: 2px solid rgba(94, 92, 252, 0.5);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+
+        .display-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(94, 92, 252, 0.2);
+        }
+
+        .display-box h2 {
+            color: #fff;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .display-box .card-placeholder {
+            width: 220px;
+            height: 320px;
+            border: 2px dashed rgba(94, 92, 252, 0.5);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin: 0 auto; /* 居中显示 */
+        }
+        
+        .display-box .card-content {
+            width: 220px;
+            height: 320px;
+            border: 2px solid rgba(94, 92, 252, 0.5);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            background: rgba(94, 92, 252, 0.2);
+            margin: 0 auto; /* 居中显示 */
+            box-shadow: 0 0 15px rgba(94, 92, 252, 0.3);
+        }
+
+        .card-content h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(94, 92, 252, 0.5);
+        }
+
+        .card-content .position {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+        }
+
+        .card-content .description {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            overflow-y: auto;
+            max-height: 200px;
+            padding: 10px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .card-content .description::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .card-content .description::-webkit-scrollbar-thumb {
+            background: rgba(94, 92, 252, 0.5);
+            border-radius: 10px;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            min-height: 150px;
+            perspective: 1000px;
+            margin-bottom: 50px; /* 设置底部间距为50px */
+            margin-top: auto;
+        }
+        
+        .container .card {
+            position: absolute;
+            width: 220px;
+            height: 320px;
+            background-color: #5e5cfc;
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #000;
+            font-size: 7rem;
+            font-weight: 800;
+            border: 10px solid rgba(41, 0, 138, 0.8);
+            outline: 1px solid #000;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                        z-index 0.6s ease;
+            transform-origin: 50% 100%;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            bottom: 0;
+        }
+        
+        .container .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent 50%, rgba(255, 255, 255, 0.3));
+            border-radius: 12px;
+            pointer-events: none;
+        }
+        
+        .container:hover .card {
+            transform: rotate(calc(var(--i) * 1.5deg)) 
+                       translate(calc(var(--i) * 70px), -80px);
+            z-index: calc(10 - var(--i));
+        }
+        
+        .container .card:hover {
+            transform: rotate(calc(var(--i) * 1.5deg)) 
+                       translate(calc(var(--i) * 70px), -100px) 
+                       scale(1.1);
+            z-index: 20;
+        }
+
+        .container .card.drawn {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        @media (max-width: 900px) {
+            .display-area {
+                flex-direction: column;
+                gap: 30px;
+            }
+
+            .display-box {
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .container .card {
+                width: 180px;
+                height: 260px;
+                font-size: 4rem;
+            }
+            
+            .container:hover .card {
+                transform: rotate(calc(var(--i) * 1.5deg)) 
+                           translate(calc(var(--i) * 50px), -60px);
+            }
+            
+            .container .card:hover {
+                transform: rotate(calc(var(--i) * 1.5deg)) 
+                           translate(calc(var(--i) * 50px), -80px)
+                           scale(1.1);
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                transform: scale(0.7);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 添加展示区域 -->
+    <div class="display-area">
+        <div class="display-box">
+            <h2>过去</h2>
+            <div class="card-placeholder" data-position="past">等待抽取...</div>
+        </div>
+        <div class="display-box">
+            <h2>现在</h2>
+            <div class="card-placeholder" data-position="present">等待抽取...</div>
+        </div>
+        <div class="display-box">
+            <h2>未来</h2>
+            <div class="card-placeholder" data-position="future">等待抽取...</div>
+        </div>
+    </div>
+    
+    <div class="container" id="cardContainer">
+        <!-- Cards will be generated by JavaScript -->
+    </div>
+
+    <script>
+        // 塔罗牌数据
+        const tarotCards = [
+            {
+                name: "愚者",
+                number: "0",
+                upright: "新的开始、冒险、自发性、纯真",
+                reversed: "鲁莽、冒险、不负责任"
+            },
+            {
+                name: "魔术师",
+                number: "I",
+                upright: "创造力、技能、意志力、自信",
+                reversed: "操纵、欺骗、才能误用"
+            },
+            {
+                name: "女祭司",
+                number: "II",
+                upright: "直觉、神秘、内在知识",
+                reversed: "隐藏的动机、表面信息"
+            },
+            {
+                name: "女皇",
+                number: "III",
+                upright: "丰饶、母性、创造力、自然",
+                reversed: "依赖、过度保护、创造力受阻"
+            },
+            {
+                name: "皇帝",
+                number: "IV",
+                upright: "权威、建立、成就、结构",
+                reversed: "专制、僵化、过度控制"
+            },
+            {
+                name: "教皇",
+                number: "V",
+                upright: "指导、精神教导、传统、信仰",
+                reversed: "教条、限制、叛逆"
+            },
+            {
+                name: "恋人",
+                number: "VI",
+                upright: "爱情、和谐、关系、价值观",
+                reversed: "不和谐、失衡、价值观冲突"
+            },
+            {
+                name: "战车",
+                number: "VII",
+                upright: "决心、意志力、成功、进展",
+                reversed: "自我怀疑、缺乏方向、侵略"
+            },
+            {
+                name: "力量",
+                number: "VIII",
+                upright: "力量、勇气、耐心、控制",
+                reversed: "自我怀疑、软弱、缺乏信心"
+            },
+            {
+                name: "隐士",
+                number: "IX",
+                upright: "内省、寻找、指导、智慧",
+                reversed: "孤独、隔离、失去方向"
+            },
+            {
+                name: "命运之轮",
+                number: "X",
+                upright: "命运、转折点、机会、变化",
+                reversed: "坏运气、阻力、不必要的变化"
+            },
+            {
+                name: "正义",
+                number: "XI",
+                upright: "正义、真理、因果、法律",
+                reversed: "不公平、缺乏责任、不诚实"
+            },
+            {
+                name: "倒吊人",
+                number: "XII",
+                upright: "牺牲、暂停、释放、新视角",
+                reversed: "拖延、抵抗、徒劳"
+            },
+            {
+                name: "死神",
+                number: "XIII",
+                upright: "结束、变化、转变、过渡",
+                reversed: "停滞、抵抗改变、否认"
+            },
+            {
+                name: "节制",
+                number: "XIV",
+                upright: "平衡、适度、耐心、目的",
+                reversed: "不平衡、过度、缺乏远见"
+            },
+            {
+                name: "恶魔",
+                number: "XV",
+                upright: "束缚、物质主义、欲望",
+                reversed: "释放、克服诱惑、分离"
+            },
+            {
+                name: "塔",
+                number: "XVI",
+                upright: "突变、混乱、启示、释放",
+                reversed: "避免毁灭、恐惧改变"
+            },
+            {
+                name: "星星",
+                number: "XVII",
+                upright: "希望、信心、目的、更新",
+                reversed: "绝望、失去信心、沮丧"
+            },
+            {
+                name: "月亮",
+                number: "XVIII",
+                upright: "直觉、潜意识、错觉",
+                reversed: "混乱、恐惧、误解"
+            },
+            {
+                name: "太阳",
+                number: "XIX",
+                upright: "快乐、活力、成功、真理",
+                reversed: "暂时的抑郁、缺乏清晰"
+            },
+            {
+                name: "审判",
+                number: "XX",
+                upright: "重生、内在呼唤、宽恕",
+                reversed: "自我怀疑、拒绝改变"
+            },
+            {
+                name: "世界",
+                number: "XXI",
+                upright: "完成、整合、成就、旅行",
+                reversed: "未完成、缺乏收尾"
+            }
+        ];
+
+        // 游戏状态
+        let gameState = {
+            drawnCards: new Set(),
+            currentPosition: 'past',
+            positions: {
+                past: null,
+                present: null,
+                future: null
+            }
+        };
+
+        // 初始化游戏
+        function initializeGame() {
+            const container = document.getElementById('cardContainer');
+            container.innerHTML = ''; // 清空容器
+            
+            // 随机选择21张牌
+            let availableCards = [...Array(tarotCards.length).keys()];
+            for (let i = 0; i < 21; i++) {
+                const randomIndex = Math.floor(Math.random() * availableCards.length);
+                const cardIndex = availableCards.splice(randomIndex, 1)[0];
+                
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.setProperty('--i', i - 10);
+                card.innerHTML = '✧';
+                card.dataset.cardIndex = cardIndex;
+                
+                card.addEventListener('click', handleCardClick);
+                container.appendChild(card);
+            }
+        }
+
+        // 处理卡片点击
+        function handleCardClick(event) {
+            const card = event.target;
+            if (card.classList.contains('drawn')) return;
+
+            const cardIndex = parseInt(card.dataset.cardIndex);
+            const isReversed = Math.random() < 0.5;
+            const cardData = tarotCards[cardIndex];
+
+            // 标记卡片为已抽取
+            card.classList.add('drawn');
+            gameState.drawnCards.add(cardIndex);
+
+            // 更新显示区域
+            const placeholder = document.querySelector(`[data-position="${gameState.currentPosition}"]`);
+            // 直接替换整个元素
+            placeholder.outerHTML = `
+                <div class="card-content" data-position="${gameState.currentPosition}">
+                    <h3>${cardData.name} ${cardData.number}</h3>
+                    <div class="position">${isReversed ? '逆位' : '正位'}</div>
+                    <div class="description">
+                        ${isReversed ? cardData.reversed : cardData.upright}
+                    </div>
+                </div>
+            `;
+
+            // 更新游戏状态
+            gameState.positions[gameState.currentPosition] = {
+                card: cardData,
+                isReversed: isReversed
+            };
+
+            // 移动到下一个位置
+            if (gameState.currentPosition === 'past') {
+                gameState.currentPosition = 'present';
+            } else if (gameState.currentPosition === 'present') {
+                gameState.currentPosition = 'future';
+            } else {
+                // 游戏结束，所有位置都已填满
+                setTimeout(() => {
+                    alert('塔罗牌解读完成！');
+                    if (confirm('是否要重新开始？')) {
+                        resetGame();
+                    }
+                }, 500);
+            }
+        }
+
+        // 重置游戏
+        function resetGame() {
+            gameState = {
+                drawnCards: new Set(),
+                currentPosition: 'past',
+                positions: {
+                    past: null,
+                    present: null,
+                    future: null
+                }
+            };
+
+            // 重置显示区域
+            document.querySelectorAll('.display-box').forEach(box => {
+                const position = box.querySelector('[data-position]').getAttribute('data-position');
+                box.querySelector('[data-position]').outerHTML = `
+                    <div class="card-placeholder" data-position="${position}">等待抽取...</div>
+                `;
+            });
+
+            // 重新初始化卡片
+            initializeGame();
+        }
+
+        // 初始化游戏
+        initializeGame();
+    </script>
+</body>
+</html>

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神秘塔罗占卜</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: #e6e6ff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: rgba(10, 15, 35, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            border: 1px solid rgba(113, 89, 193, 0.3);
+            padding: 30px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(113, 89, 193, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 2.8rem;
+            background: linear-gradient(90deg, #a993fe, #7e61e7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+            text-shadow: 0 0 15px rgba(126, 97, 231, 0.4);
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .question-section {
+            background: rgba(20, 25, 50, 0.6);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .question-section h2 {
+            margin-bottom: 15px;
+            color: #a993fe;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .question-input {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .question-input input {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: rgba(30, 35, 60, 0.7);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1.1rem;
+            border: 2px solid rgba(113, 89, 193, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .question-input input:focus {
+            outline: none;
+            border-color: #7e61e7;
+            box-shadow: 0 0 15px rgba(126, 97, 231, 0.4);
+        }
+        
+        .question-input button {
+            background: linear-gradient(90deg, #7e61e7, #5d3fd3);
+            color: white;
+            border: none;
+            padding: 0 35px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(126, 97, 231, 0.3);
+        }
+        
+        .question-input button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(126, 97, 231, 0.5);
+        }
+        
+        .card-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .card-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .tarot-card {
+            width: 220px;
+            height: 350px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #2d2b55, #3d2a8f);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 25px;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            transform: rotateY(0deg);
+            backface-visibility: hidden;
+        }
+        
+        .tarot-card.back {
+            background: linear-gradient(135deg, #3d2a8f, #2d2b55);
+            transform: rotateY(180deg);
+        }
+        
+        .tarot-card.flipped {
+            transform: rotateY(180deg);
+        }
+        
+        .tarot-card.flipped.back {
+            transform: rotateY(0deg);
+        }
+        
+        .card-top, .card-bottom {
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .card-bottom {
+            transform: rotate(180deg);
+        }
+        
+        .card-center {
+            text-align: center;
+            font-size: 5rem;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        .card-back {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+        
+        .card-back .pattern {
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, #a993fe 0%, transparent 70%);
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+        
+        .result-section {
+            background: rgba(20, 25, 50, 0.6);
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: none;
+        }
+        
+        .result-section h2 {
+            margin-bottom: 20px;
+            color: #a993fe;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-info {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 25px;
+            align-items: center;
+        }
+        
+        .card-preview {
+            width: 150px;
+            height: 240px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2d2b55, #3d2a8f);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-details {
+            flex: 1;
+        }
+        
+        .card-details h3 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        
+        .card-details .card-position {
+            display: inline-block;
+            background: rgba(126, 97, 231, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .ai-interpretation {
+            background: rgba(30, 35, 60, 0.7);
+            padding: 25px;
+            border-radius: 15px;
+            line-height: 1.8;
+            border-left: 4px solid #7e61e7;
+        }
+        
+        .ai-interpretation p {
+            margin-bottom: 15px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .action-buttons button {
+            padding: 15px 40px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .action-buttons .draw-again {
+            background: linear-gradient(90deg, #7e61e7, #5d3fd3);
+            color: white;
+            box-shadow: 0 5px 15px rgba(126, 97, 231, 0.3);
+        }
+        
+        .action-buttons .save-result {
+            background: transparent;
+            color: #a993fe;
+            border: 2px solid #7e61e7;
+        }
+        
+        .action-buttons button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(126, 97, 231, 0.5);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(113, 89, 193, 0.3);
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        .decoration {
+            position: absolute;
+            z-index: 1;
+            opacity: 0.1;
+        }
+        
+        .decoration.circle {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #a993fe 0%, transparent 70%);
+            top: -150px;
+            right: -150px;
+        }
+        
+        .decoration.triangle {
+            width: 0;
+            height: 0;
+            border-left: 200px solid transparent;
+            border-right: 200px solid transparent;
+            border-bottom: 350px solid #7e61e7;
+            bottom: -200px;
+            left: -200px;
+            transform: rotate(20deg);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .question-input {
+                flex-direction: column;
+            }
+            
+            .question-input button {
+                padding: 15px;
+            }
+            
+            .card-info {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 装饰元素 -->
+    <div class="decoration circle"></div>
+    <div class="decoration triangle"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-star-and-crescent"></i> 神秘塔罗占卜</h1>
+            <p>输入你的问题，抽取塔罗牌，获取AI生成的深度解读。塔罗牌将揭示隐藏的真相，指引你前行的方向。</p>
+        </div>
+        
+        <div class="question-section">
+            <h2><i class="fas fa-question-circle"></i> 你的问题是什么？</h2>
+            <div class="question-input">
+                <input type="text" id="question" placeholder="例如：我近期的事业发展会顺利吗？" value="我近期的事业发展会顺利吗？">
+                <button id="draw-card"><i class="fas fa-hand-point-right"></i> 抽取塔罗牌</button>
+            </div>
+            <p>请专注于一个问题，保持内心平静，然后点击抽取按钮。</p>
+        </div>
+        
+        <div class="card-section">
+            <div class="card-container">
+                <div class="tarot-card" id="tarot-card">
+                    <div class="card-top">✶</div>
+                    <div class="card-center"><i class="fas fa-moon"></i></div>
+                    <div class="card-bottom">✶</div>
+                </div>
+                <div class="tarot-card back" id="tarot-card-back">
+                    <div class="card-back">
+                        <div class="pattern"></div>
+                    </div>
+                </div>
+            </div>
+            <p>点击卡牌查看正反面</p>
+        </div>
+        
+        <div class="result-section" id="result-section">
+            <h2><i class="fas fa-robot"></i> AI 解读结果</h2>
+            <div class="card-info">
+                <div class="card-preview">
+                    <div class="card-top">✶</div>
+                    <div class="card-center"><i class="fas fa-crown"></i></div>
+                    <div class="card-bottom">✶</div>
+                </div>
+                <div class="card-details">
+                    <h3>皇帝</h3>
+                    <span class="card-position">正位</span>
+                    <p>代表权威、领导力、结构和稳定</p>
+                </div>
+            </div>
+            
+            <div class="ai-interpretation">
+                <p>针对您关于"<span id="question-display">我近期的事业发展会顺利吗？</span>"的问题，皇帝牌的出现预示着强大的领导力和掌控力。</p>
+                <p><strong>事业分析：</strong> 皇帝牌表明您的事业正进入一个需要更多责任和决策的阶段。您可能需要建立更稳固的结构和计划。这张牌鼓励您采取主动，展现领导才能。</p>
+                <p><strong>关键建议：</strong></p>
+                <ul>
+                    <li>制定明确的职业目标和计划</li>
+                    <li>在决策时保持理性，但不要过于僵化</li>
+                    <li>建立稳固的工作流程和结构</li>
+                    <li>展现您的专业权威和领导能力</li>
+                </ul>
+                <p><strong>未来展望：</strong> 皇帝牌预示着一个稳定发展的时期，但成功需要您主动把握机会，建立稳固基础。</p>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="draw-again"><i class="fas fa-redo"></i> 重新抽取</button>
+                <button class="save-result"><i class="fas fa-download"></i> 保存结果</button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>本塔罗占卜结果仅供娱乐参考。塔罗牌是自我反思的工具，而非命运预言。请理性看待结果，生活中的选择始终在您手中。</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tarotCard = document.getElementById('tarot-card');
+            const tarotCardBack = document.getElementById('tarot-card-back');
+            const drawCardBtn = document.getElementById('draw-card');
+            const resultSection = document.getElementById('result-section');
+            const questionDisplay = document.getElementById('question-display');
+            const questionInput = document.getElementById('question');
+            const drawAgainBtn = document.querySelector('.draw-again');
+            
+            // 卡牌点击翻转
+            tarotCard.addEventListener('click', flipCard);
+            tarotCardBack.addEventListener('click', flipCard);
+            
+            function flipCard() {
+                tarotCard.classList.toggle('flipped');
+                tarotCardBack.classList.toggle('flipped');
+            }
+            
+            // 抽取卡牌
+            drawCardBtn.addEventListener('click', function() {
+                // 显示加载效果
+                drawCardBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在抽取...';
+                drawCardBtn.disabled = true;
+                
+                // 更新显示的问题
+                const question = questionInput.value || "我的未来如何？";
+                questionDisplay.textContent = question;
+                
+                // 模拟抽取过程
+                setTimeout(function() {
+                    // 随机选择卡牌
+                    const cards = ['星星', '月亮', '太阳', '女祭司', '魔术师', '皇后', '皇帝', '恋人', '战车', '力量', '隐士', '命运之轮'];
+                    const positions = ['正位', '逆位'];
+                    const symbols = ['fa-star', 'fa-moon', 'fa-sun', 'fa-crown', 'fa-hat-wizard', 'fa-gem', 'fa-dove', 'fa-heart', 'fa-horse', 'fa-paw', 'fa-mountain', 'fa-sync'];
+                    
+                    const randomCard = Math.floor(Math.random() * cards.length);
+                    const randomPosition = Math.floor(Math.random() * positions.length);
+                    
+                    // 更新卡牌显示
+                    const cardCenter = tarotCard.querySelector('.card-center');
+                    cardCenter.innerHTML = `<i class="fas ${symbols[randomCard]}"></i>`;
+                    
+                    // 更新结果预览
+                    const previewCard = document.querySelector('.card-preview .card-center');
+                    previewCard.innerHTML = `<i class="fas ${symbols[randomCard]}"></i>`;
+                    
+                    // 更新卡牌名称
+                    document.querySelector('.card-details h3').textContent = cards[randomCard];
+                    
+                    // 更新卡牌位置
+                    document.querySelector('.card-position').textContent = positions[randomPosition];
+                    
+                    // 显示结果区域
+                    resultSection.style.display = 'block';
+                    
+                    // 滚动到结果区域
+                    resultSection.scrollIntoView({ behavior: 'smooth' });
+                    
+                    // 恢复按钮状态
+                    drawCardBtn.innerHTML = '<i class="fas fa-hand-point-right"></i> 抽取塔罗牌';
+                    drawCardBtn.disabled = false;
+                }, 2000);
+            });
+            
+            // 重新抽取
+            drawAgainBtn.addEventListener('click', function() {
+                resultSection.style.display = 'none';
+                questionInput.value = '';
+                questionInput.focus();
+                
+                // 重置卡牌
+                tarotCard.classList.remove('flipped');
+                tarotCardBack.classList.remove('flipped');
+                
+                // 滚动到顶部
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            
+            // 模拟保存结果
+            document.querySelector('.save-result').addEventListener('click', function() {
+                alert('结果已保存！您可以在浏览器的历史记录中查看本次占卜结果。');
+            });
+        });
+    </script>
+</body>
+</html>

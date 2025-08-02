@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>塔罗牌抽取</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        /* 添加流星背景画布样式 */
+        #meteorCanvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        /* 添加动画关键帧 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes cardGlow {
+            0% {
+                box-shadow: 0 0 15px rgba(94, 92, 252, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 25px rgba(94, 92, 252, 0.5);
+            }
+            100% {
+                box-shadow: 0 0 15px rgba(94, 92, 252, 0.3);
+            }
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, 
+                #0a0a1a 0%, 
+                #1a1a3a 50%, 
+                #2d2d5a 100%);
+            color: #fff;
+            padding: 20px;
+            padding-bottom: 60px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 修改展示区域容器样式 */
+        .cards-container {
+            width: 920px; /* 刚好容纳三张卡片的宽度 (280px * 3 + 间距) */
+            max-width: 95%;
+            margin: 40px auto;
+            padding: 15px;
+            background: rgba(94, 92, 252, 0.05);
+            border-radius: 20px;
+            border: 2px solid rgba(94, 92, 252, 0.2);
+            overflow: hidden;
+            position: relative; /* 为滚动按钮提供定位上下文 */
+        }
+
+        /* 修改展示区域为水平滚动 */
+        .display-area {
+            width: 100%;
+            display: flex;
+            overflow-x: auto;
+            gap: 20px;
+            padding: 10px 5px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            scroll-behavior: smooth; /* 添加平滑滚动 */
+        }
+
+        .display-area::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 调整滚动指示器位置和样式 */
+        .scroll-indicator {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: rgba(94, 92, 252, 0.3);
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 10;
+            color: white;
+            font-size: 20px;
+            text-shadow: 0 0 10px rgba(94, 92, 252, 0.5);
+        }
+
+        .cards-container:hover .scroll-indicator {
+            opacity: 1;
+        }
+
+        .scroll-indicator:hover {
+            background: rgba(94, 92, 252, 0.5);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .scroll-left {
+            left: 5px;
+        }
+
+        .scroll-right {
+            right: 5px;
+        }
+
+        .display-box {
+            flex: 0 0 280px; /* 固定宽度，不允许伸缩 */
+            height: 400px;
+            background: rgba(95, 92, 252, 0);
+            border: 2px solid rgba(94, 92, 252, 0.5);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+            scroll-snap-align: center;
+        }
+
+        .display-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(94, 92, 252, 0.2);
+        }
+
+        .display-box h2 {
+            color: #fff;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .display-box .card-placeholder {
+            width: 220px;
+            height: 320px;
+            border: 2px dashed rgba(94, 92, 252, 0.5);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin: 0 auto; /* 居中显示 */
+        }
+        
+        .display-box .card-content {
+            width: 220px;
+            height: 320px;
+            border: 2px solid rgba(94, 92, 252, 0.5);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* 垂直居中 */
+            align-items: center;
+            text-align: center;
+            background: rgba(94, 92, 252, 0.2);
+            margin: 0 auto;
+            opacity: 0;
+            animation: fadeIn 0.8s ease forwards, cardGlow 2s ease-in-out infinite;
+            backdrop-filter: blur(5px);
+            gap: 15px; /* 添加元素之间的间距 */
+        }
+
+        .card-content h3 {
+            opacity: 0;
+            animation: fadeIn 0.8s ease 0.2s forwards;
+            font-size: 1.4rem; /* 增大标题字号 */
+            margin: 0; /* 移除默认边距 */
+            padding: 0;
+            width: 100%;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(94, 92, 252, 0.5);
+            letter-spacing: 1px; /* 添加字间距 */
+        }
+
+        .card-content .position {
+            opacity: 0;
+            animation: fadeIn 0.8s ease 0.4s forwards;
+            margin: 0;
+            padding: 5px 15px;
+            font-size: 1.1rem;
+            border-radius: 15px;
+            min-width: 80px;
+        }
+
+        .card-content .position.upright {
+            color: #ffd700;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+        }
+
+        .card-content .position.reversed {
+            color: #ff4d4d;
+            text-shadow: 0 0 5px rgba(255, 77, 77, 0.5);
+        }
+
+        .card-content .description {
+            opacity: 0;
+            animation: fadeIn 0.8s ease 0.6s forwards;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+            overflow-y: auto;
+            max-height: 160px;
+            width: 100%;
+            padding: 10px 5px;
+            text-align: center;
+            line-height: 1.6;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-content .description.upright {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .card-content .description.reversed {
+            color: rgba(255, 102, 102, 0.9);
+        }
+
+        .card-content .description::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .card-content .description::-webkit-scrollbar-thumb {
+            background: rgba(94, 92, 252, 0.5);
+            border-radius: 10px;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            min-height: 150px;
+            perspective: 1000px;
+            margin-top: auto;
+            margin-top: 60px;
+            padding-bottom: 50px; /* 增加底部内边距 */
+        }
+        
+        .container .card {
+            position: absolute;
+            width: 220px;
+            height: 320px;
+            background-color: #5e5cfc;
+            border-radius: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #000;
+            font-size: 7rem;
+            font-weight: 800;
+            border: 10px solid rgba(41, 0, 138, 0.8);
+            outline: 1px solid #000;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                        z-index 0.6s ease;
+            transform-origin: 50% 100%;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            bottom: 0;
+        }
+        
+        .container .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent 50%, rgba(255, 255, 255, 0.3));
+            border-radius: 12px;
+            pointer-events: none;
+        }
+        
+        .container:hover .card {
+            transform: rotate(calc(var(--i) * 1.5deg)) 
+                       translate(calc(var(--i) * 70px), -80px);
+            z-index: calc(10 - var(--i));
+        }
+        
+        .container .card:hover {
+            transform: rotate(calc(var(--i) * 1.5deg)) 
+                       translate(calc(var(--i) * 70px), -100px) 
+                       scale(1.1);
+            z-index: 20;
+        }
+
+        .container .card.drawn {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .container.completed {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .container.completed .card {
+            cursor: default;
+        }
+        
+        @media (max-width: 960px) {
+            .cards-container {
+                width: 620px; /* 适应两张卡片 */
+            }
+        }
+
+        @media (max-width: 660px) {
+            .cards-container {
+                width: 320px; /* 适应一张卡片 */
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .display-area {
+                flex-direction: column;
+                gap: 30px;
+            }
+
+            .display-box {
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .container .card {
+                width: 180px;
+                height: 260px;
+                font-size: 4rem;
+            }
+            
+            .container:hover .card {
+                transform: rotate(calc(var(--i) * 1.5deg)) 
+                           translate(calc(var(--i) * 50px), -60px);
+            }
+            
+            .container .card:hover {
+                transform: rotate(calc(var(--i) * 1.5deg)) 
+                           translate(calc(var(--i) * 50px), -80px)
+                           scale(1.1);
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                transform: scale(0.7);
+            }
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin: 30px auto;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .button-group.visible {
+            opacity: 1;
+        }
+
+        .button-group button {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            background: rgba(94, 92, 252, 0.2);
+            color: #fff;
+            border: 2px solid rgba(94, 92, 252, 0.5);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            text-shadow: 0 0 5px rgba(94, 92, 252, 0.5);
+        }
+
+        .button-group button:hover {
+            background: rgba(94, 92, 252, 0.4);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(94, 92, 252, 0.3);
+        }
+
+        .button-group button:active {
+            transform: scale(0.95);
+        }
+
+        .button-group button.copy-btn {
+            border-color: rgba(100, 255, 100, 0.5);
+            background: rgba(100, 255, 100, 0.1);
+        }
+
+        .button-group button.copy-btn:hover {
+            background: rgba(100, 255, 100, 0.2);
+        }
+
+        .button-group button.suggest-btn {
+            border-color: rgba(255, 215, 0, 0.5);
+            background: rgba(255, 215, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .button-group button.suggest-btn:hover {
+            background: rgba(255, 215, 0, 0.2);
+        }
+
+        .button-group button.suggest-btn:disabled {
+            background: rgba(50, 50, 50, 0.5);
+            border-color: rgba(50, 50, 50, 0.3);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+        }
+
+        /* 新增按钮容器定位样式 */
+        .buttons-wrapper {
+            top:-100px;
+            position: relative;
+            z-index: 100; /* 确保按钮在最上层 */
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 40px 0; /* 增加垂直间距 */
+        }
+
+        /* 微调按钮组位置 */
+        .button-group {
+            position: relative;
+            z-index: 100;
+            margin: 0; /* 移除原有的margin */
+        }
+
+        /* 移除旧的重置按钮样式 */
+        .reset-button {
+            display: none;
+        }
+
+        /* 移除旧的建议区域样式 */
+        .suggestion-area {
+            width: 100%;
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+        }
+
+        .suggestion-card {
+            flex: 0 0 280px;
+            scroll-snap-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.8s ease forwards;
+        }
+    </style>
+</head>
+<body>
+    <!-- 流星背景画布 -->
+    <canvas id="meteorCanvas"></canvas>
+    
+    <!-- 修改展示区域结构 -->
+    <div class="cards-container">
+        <div class="scroll-indicator scroll-left">←</div>
+        <div class="display-area">
+            <div class="display-box">
+                <h2>过去</h2>
+                <div class="card-placeholder" data-position="past">等待抽取...</div>
+            </div>
+            <div class="display-box">
+                <h2>现在</h2>
+                <div class="card-placeholder" data-position="present">等待抽取...</div>
+            </div>
+            <div class="display-box">
+                <h2>未来</h2>
+                <div class="card-placeholder" data-position="future">等待抽取...</div>
+            </div>
+        </div>
+        <div class="scroll-indicator scroll-right">→</div>
+    </div>
+
+    <div class="suggestion-area" id="suggestionArea"></div>
+    
+    <div class="buttons-wrapper">
+        <div class="button-group" id="buttonGroup">
+            <button class="copy-btn" id="copyButton">复制结果</button>
+            <button class="reset-btn" id="resetButton">再来一次</button>
+            <button class="suggest-btn" id="suggestButton">抽取建议牌</button>
+        </div>
+    </div>
+
+    <div class="container" id="cardContainer">
+        <!-- Cards will be generated by JavaScript -->
+    </div>
+
+    <script>
+        // 流星背景动画
+        const canvas = document.querySelector('#meteorCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // 创建流星类
+        class Meteor {
+            constructor() {
+                this.reset();
+                this.speed = 5 + Math.random() * 2;
+            };
+
+            reset() {
+                this.x = Math.random() * canvas.width * 1.5;
+                this.y = -20;
+                this.length = 50 + Math.random() * 100;
+                this.size = 1 + Math.random() * 3;
+                this.angle = Math.PI / 4 + Math.random() * Math.PI / 6;
+                this.alpha = 1;
+            };
+
+            update() {
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+                this.alpha -= 0.001;
+
+                if (this.y > canvas.height || this.x < 0 || this.alpha <= 0) {
+                    this.reset();
+                };
+            };
+
+            draw() {
+                const endX = this.x - Math.cos(this.angle) * this.length;
+                const endY = this.y - Math.sin(this.angle) * this.length;
+
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(endX, endY);
+                const gradient = ctx.createLinearGradient(this.x, this.y, endX, endY);
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${this.alpha})`);
+                gradient.addColorStop(0.5, `rgba(255, 255, 255, ${this.alpha * 0.7})`);
+                gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = this.size;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            };
+        };
+
+        // 创建流星群
+        const meteors = [];
+        const meteorCount = Math.floor(Math.random() * 3 + 3);
+        for (let i = 0; i < meteorCount; i++) {
+            meteors.push(new Meteor());
+        }
+
+        // 流星动画循环
+        function animateMeteors() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            meteors.forEach((meteor) => {
+                meteor.update();
+                meteor.draw();
+            });
+
+            requestAnimationFrame(animateMeteors);
+        };
+
+        // 窗口大小改变时重新设置画布尺寸
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // 启动流星动画
+        animateMeteors();
+
+        // 塔罗牌数据
+        const majorArcana = [
+        { name: "愚者", upright: "新的开始、冒险、自发性", reversed: "鲁莽、冒险、不负责任" },
+        { name: "魔术师", upright: "创造力、技能、意志力", reversed: "操纵、欺骗、才能误用" },
+        { name: "女祭司", upright: "直觉、神秘、内在知识", reversed: "隐藏的动机、表面信息" },
+        { name: "女皇", upright: "丰饶、母性、创造力", reversed: "依赖、过度保护、创造力受阻" },
+        { name: "皇帝", upright: "权威、领导力、控制", reversed: "专制、僵化、过度控制" },
+        { name: "教皇", upright: "传统、信仰、指导", reversed: "教条、限制、叛逆" },
+        { name: "恋人", upright: "选择、爱情、和谐", reversed: "不和谐、失衡、价值观冲突" },
+        { name: "战车", upright: "胜利、意志力、自信", reversed: "自我怀疑、缺乏方向、侵略" },
+        { name: "力量", upright: "勇气、耐心、控制", reversed: "自我怀疑、软弱、缺乏信心" },
+        { name: "隐士", upright: "内省、智慧、孤独", reversed: "孤独、隔离、失去方向" },
+        { name: "命运之轮", upright: "变化、机会、命运", reversed: "坏运气、阻力、不必要的变化" },
+        { name: "正义", upright: "平衡、真理、因果", reversed: "不公平、缺乏责任、不诚实" },
+        { name: "倒吊人", upright: "牺牲、新视角、等待", reversed: "拖延、抵抗、徒劳" },
+        { name: "死神", upright: "结束、转变、重生", reversed: "停滞、抵抗改变、否认" },
+        { name: "节制", upright: "平衡、适度、和谐", reversed: "不平衡、过度、缺乏远见" },
+        { name: "恶魔", upright: "束缚、诱惑、物质主义", reversed: "释放、克服诱惑、分离" },
+        { name: "塔", upright: "突变、崩塌、启示", reversed: "避免毁灭、恐惧改变" },
+        { name: "星星", upright: "希望、灵感、指引", reversed: "绝望、失去信心、沮丧" },
+        { name: "月亮", upright: "幻想、恐惧、直觉", reversed: "混乱、恐惧、误解" },
+        { name: "太阳", upright: "快乐、成功、活力", reversed: "暂时的抑郁、缺乏清晰" },
+        { name: "审判", upright: "重生、觉醒、改变", reversed: "自我怀疑、拒绝改变" },
+        { name: "世界", upright: "完成、圆满、统一", reversed: "未完成、缺乏收尾" }
+    ];
+
+    // 小阿尔卡纳牌组 - 权杖牌组
+    const wands = [
+        { name: "权杖王牌", upright: "新机会、灵感、创造力的开始", reversed: "错失机会、创意受阻" },
+        { name: "权杖二", upright: "规划、决策、平衡", reversed: "犹豫不决、计划失败" },
+        { name: "权杖三", upright: "探索、冒险、扩张", reversed: "限制、延迟、错失机会" },
+        { name: "权杖四", upright: "稳定、休息、成就", reversed: "不稳定、失去平衡" },
+        { name: "权杖五", upright: "竞争、冲突、挑战", reversed: "避免冲突、和平解决" },
+        { name: "权杖六", upright: "胜利、成功、认可", reversed: "失败、缺乏认可" },
+        { name: "权杖七", upright: "勇气、毅力、防御", reversed: "放弃、退缩、缺乏信心" },
+        { name: "权杖八", upright: "行动、速度、变化", reversed: "延迟、挫折、混乱" },
+        { name: "权杖九", upright: "力量、准备、坚持", reversed: "疲惫、防御过度、脆弱" },
+        { name: "权杖十", upright: "负担、压力、责任", reversed: "释放负担、简化生活" },
+        { name: "权杖侍从", upright: "热情、冒险、消息", reversed: "坏消息、冲动、不成熟" },
+        { name: "权杖骑士", upright: "行为、热情、冲动", reversed: "急躁、鲁莽、冲突" },
+        { name: "权杖皇后", upright: "自信、热情、独立", reversed: "嫉妒、自私、缺乏安全感" },
+        { name: "权杖国王", upright: "领导、创造、魅力", reversed: "专制、控制欲强、不成熟" }
+    ];
+
+    // 小阿尔卡纳牌组 - 钱币牌组
+    const pentacles = [
+        { name: "钱币王牌", upright: "机会、繁荣、物质", reversed: "财务损失、错失机会" },
+        { name: "钱币二", upright: "平衡、适应、变化", reversed: "不平衡、财务不稳定" },
+        { name: "钱币三", upright: "技能、工作、合作", reversed: "缺乏合作、技能不足" },
+        { name: "钱币四", upright: "控制、稳定、保守", reversed: "贪婪、吝啬、过度控制" },
+        { name: "钱币五", upright: "困难、贫困、担忧", reversed: "恢复、改善、新希望" },
+        { name: "钱币六", upright: "给予、接受、分享", reversed: "自私、债务、权力不平衡" },
+        { name: "钱币七", upright: "评估、等待、投资", reversed: "缺乏规划、短期思考" },
+        { name: "钱币八", upright: "技能、努力、进展", reversed: "缺乏动力、平庸、匆忙" },
+        { name: "钱币九", upright: "独立、享受、善举", reversed: "依赖、物质主义" },
+        { name: "钱币十", upright: "财富、安全、传统", reversed: "财务损失、家庭冲突" },
+        { name: "钱币侍从", upright: "学习、消费、机会", reversed: "缺乏动力、财务失误" },
+        { name: "钱币骑士", upright: "工作、责任、例行", reversed: "懒惰、拖延、缺乏进步" },
+        { name: "钱币皇后", upright: "实用、丰富、安全", reversed: "物质主义、不安全感" },
+        { name: "钱币国王", upright: "富有、成功、实现", reversed: "贪婪、物质主义、不诚实" }
+    ];
+
+    // 小阿尔卡纳牌组 - 宝剑牌组
+    const swords = [
+        { name: "宝剑王牌", upright: "突破、清晰、真理", reversed: "混乱、误判、沟通问题" },
+        { name: "宝剑二", upright: "选择、平衡、决定", reversed: "犹豫、逃避、信息不足" },
+        { name: "宝剑三", upright: "心痛、分离、悲伤", reversed: "恢复、和解、治愈" },
+        { name: "宝剑四", upright: "休息、恢复、冥想", reversed: "恢复活力、重新参与" },
+        { name: "宝剑五", upright: "失败、冲突、损失", reversed: "和解、妥协、避免冲突" },
+        { name: "宝剑六", upright: "过渡、改变、旅程", reversed: "停滞、未解决的问题" },
+        { name: "宝剑七", upright: "欺骗、策略、秘密", reversed: "诚实、真相暴露" },
+        { name: "宝剑八", upright: "困境、限制、障碍", reversed: "自由、新视角、解脱" },
+        { name: "宝剑九", upright: "焦虑、担忧、恐惧", reversed: "希望、释放恐惧" },
+        { name: "宝剑十", upright: "结束、失败、痛苦", reversed: "恢复、新开始" },
+        { name: "宝剑侍从", upright: "警觉、观察、消息", reversed: "欺骗、恶意、延迟消息" },
+        { name: "宝剑骑士", upright: "行动、思考、冲突", reversed: "冲动、鲁莽、缺乏思考" },
+        { name: "宝剑皇后", upright: "独立、智慧、直接", reversed: "冷酷、无情、操纵" },
+        { name: "宝剑国王", upright: "权威、真理、正义", reversed: "滥用权力、不公正、操纵" }
+    ];
+
+    // 小阿尔卡纳牌组 - 圣杯牌组
+    const cups = [
+        { name: "圣杯王牌", upright: "情感、直觉、新的感情", reversed: "情感空虚、拒绝" },
+        { name: "圣杯二", upright: "平衡、选择、伙伴关系", reversed: "不平衡、分离、冲突" },
+        { name: "圣杯三", upright: "庆祝、欢乐、团体", reversed: "冲突、排斥、过度" },
+        { name: "圣杯四", upright: "沉思、倦怠、停滞", reversed: "新机会、接受邀请" },
+        { name: "圣杯五", upright: "失望、悲伤、遗憾", reversed: "接受、前进、希望" },
+        { name: "圣杯六", upright: "怀旧、回忆、重聚", reversed: "活在当下、放下过去" },
+        { name: "圣杯七", upright: "选择、幻想、迷茫", reversed: "清晰、决定、现实" },
+        { name: "圣杯八", upright: "放弃、转变、追求", reversed: "安于现状、恐惧改变" },
+        { name: "圣杯九", upright: "满足、幸福、愿望实现", reversed: "不满、物质主义" },
+        { name: "圣杯十", upright: "家庭、和谐、圆满", reversed: "家庭冲突、不和谐" },
+        { name: "圣杯侍从", upright: "消息、创意、机会", reversed: "情感不成熟、坏消息" },
+        { name: "圣杯骑士", upright: "浪漫、魅力、提议", reversed: "不切实际、情感操纵" },
+        { name: "圣杯皇后", upright: "慈爱、关怀、同情", reversed: "情绪化、依赖、不安全感" },
+        { name: "圣杯国王", upright: "智慧、艺术、平和", reversed: "情感压抑、冷漠、操纵" }
+    ];
+
+    // 合并所有塔罗牌
+    const tarotCards = [
+        ...majorArcana,
+        ...wands,
+        ...pentacles,
+        ...swords,
+        ...cups
+    ];
+
+        // 修改游戏状态
+        let gameState = {
+            drawnCards: new Set(),
+            currentPosition: 'past',
+            positions: {
+                past: null,
+                present: null,
+                future: null
+            },
+            isCompleted: false,
+            suggestionMode: false,
+            suggestionCount: 0
+        };
+
+        // 新增：保存初始展示区域的HTML
+        const initialDisplayAreaHTML = document.querySelector('.display-area').innerHTML;
+
+        // 初始化游戏
+        function initializeGame() {
+            const container = document.getElementById('cardContainer');
+            container.innerHTML = ''; // 清空容器
+            
+            // 随机选择21张牌
+            let availableCards = [...Array(tarotCards.length).keys()];
+            for (let i = 0; i < 21; i++) {
+                const randomIndex = Math.floor(Math.random() * availableCards.length);
+                const cardIndex = availableCards.splice(randomIndex, 1)[0];
+                
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.setProperty('--i', i - 10);
+                card.innerHTML = '✧';
+                card.dataset.cardIndex = cardIndex;
+                
+                card.addEventListener('click', handleCardClick);
+                container.appendChild(card);
+            }
+        }
+
+        // 修改处理卡片点击
+        function handleCardClick(event) {
+            const card = event.target;
+            if (card.classList.contains('drawn')) return;
+            
+            if (gameState.suggestionMode) {
+                handleSuggestionCardDraw(card);
+                return;
+            }
+
+            const cardIndex = parseInt(card.dataset.cardIndex);
+            const isReversed = Math.random() < 0.5;
+            const cardData = tarotCards[cardIndex];
+
+            card.classList.add('drawn');
+            gameState.drawnCards.add(cardIndex);
+
+            const placeholder = document.querySelector(`[data-position="${gameState.currentPosition}"]`);
+            const newContent = document.createElement('div');
+            newContent.className = 'card-content';
+            newContent.setAttribute('data-position', gameState.currentPosition);
+            newContent.innerHTML = `
+                <h3>${cardData.name}</h3>
+                <div class="position ${isReversed ? 'reversed' : 'upright'}">${isReversed ? '逆位' : '正位'}</div>
+                <div class="description">
+                    ${isReversed ? cardData.reversed : cardData.upright}
+                </div>
+            `;
+
+            placeholder.parentNode.replaceChild(newContent, placeholder);
+
+            gameState.positions[gameState.currentPosition] = {
+                card: cardData,
+                isReversed: isReversed
+            };
+
+            if (gameState.currentPosition === 'past') {
+                gameState.currentPosition = 'present';
+            } else if (gameState.currentPosition === 'present') {
+                gameState.currentPosition = 'future';
+            } else {
+                handleGameComplete();
+            }
+        }
+
+        // 修改建议牌功能
+        function drawSuggestionCard() {
+            if (!gameState.isCompleted || gameState.suggestionCount >= 3) return;
+
+            gameState.suggestionMode = true;
+            document.getElementById('cardContainer').classList.remove('completed');
+            document.getElementById('suggestButton').textContent = '再次抽取建议牌';
+            // 隐藏按钮组
+            document.getElementById('buttonGroup').classList.remove('visible');
+        }
+
+        // 新增建议牌抽取处理函数
+        function handleSuggestionCardDraw(card) {
+            const cardIndex = parseInt(card.dataset.cardIndex);
+            const isReversed = Math.random() < 0.5;
+            const cardData = tarotCards[cardIndex];
+
+            card.classList.add('drawn');
+            gameState.drawnCards.add(cardIndex);
+
+            const suggestionCard = document.createElement('div');
+            suggestionCard.className = 'display-box';
+            suggestionCard.innerHTML = `
+                <h2>建议 ${gameState.suggestionCount + 1}</h2>
+                <div class="card-content">
+                    <h3>${cardData.name}</h3>
+                    <div class="position ${isReversed ? 'reversed' : 'upright'}">${isReversed ? '逆位' : '正位'}</div>
+                    <div class="description">
+                        ${isReversed ? cardData.reversed : cardData.upright}
+                    </div>
+                </div>
+            `;
+
+            document.querySelector('.display-area').appendChild(suggestionCard);
+
+            // 自动滚动到新添加的卡片
+            setTimeout(() => {
+                const displayArea = document.querySelector('.display-area');
+                const scrollPosition = displayArea.scrollWidth - displayArea.clientWidth;
+                displayArea.scrollTo({
+                    left: scrollPosition,
+                    behavior: 'smooth'
+                });
+            }, 100);
+
+            gameState.suggestionCount++;
+            gameState.suggestionMode = false;
+            document.getElementById('cardContainer').classList.add('completed');
+
+            // 重新显示按钮组
+            document.getElementById('buttonGroup').classList.add('visible');
+
+            const suggestButton = document.getElementById('suggestButton');
+            if (gameState.suggestionCount >= 3) {
+                suggestButton.disabled = true;
+                suggestButton.textContent = '次数上限';
+            }
+        }
+
+        // 复制结果功能
+        function copyResult() {
+            const positions = ['past', 'present', 'future'];
+            let result = '塔罗牌占卜结果：\n\n';
+            
+            positions.forEach(pos => {
+                const content = document.querySelector(`[data-position="${pos}"]`);
+                if (content && content.classList.contains('card-content')) {
+                    const title = content.querySelector('h3').textContent;
+                    const position = content.querySelector('.position').textContent;
+                    const description = content.querySelector('.description').textContent.trim();
+                    
+                    result += `${pos === 'past' ? '过去' : pos === 'present' ? '现在' : '未来'}：\n`;
+                    result += `${title} - ${position}\n`;
+                    result += `${description}\n\n`;
+                }
+            });
+
+            navigator.clipboard.writeText(result).then(() => {
+                const copyBtn = document.getElementById('copyButton');
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '已复制！';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            });
+        }
+
+        // 修改游戏结束处理
+        function handleGameComplete() {
+            document.getElementById('buttonGroup').classList.add('visible');
+            document.getElementById('cardContainer').classList.add('completed');
+            gameState.isCompleted = true;
+        }
+
+        // 修改重置游戏
+        function resetGame() {
+            // 重置游戏状态
+            gameState = {
+                drawnCards: new Set(),
+                currentPosition: 'past',
+                positions: {
+                    past: null,
+                    present: null,
+                    future: null
+                },
+                isCompleted: false,
+                suggestionMode: false,
+                suggestionCount: 0
+            };
+
+            // 重置展示区域为初始状态
+            document.querySelector('.display-area').innerHTML = initialDisplayAreaHTML;
+
+            // 重置建议按钮状态
+            const suggestButton = document.getElementById('suggestButton');
+            suggestButton.disabled = false;
+            suggestButton.textContent = '抽取建议牌';
+
+            // 隐藏按钮组
+            document.getElementById('buttonGroup').classList.remove('visible');
+            
+            // 重置底部卡片容器
+            document.getElementById('cardContainer').classList.remove('completed');
+
+            // 重新初始化游戏
+            initializeGame();
+        }
+
+        // 初始化事件监听
+        document.getElementById('copyButton').addEventListener('click', copyResult);
+        document.getElementById('resetButton').addEventListener('click', resetGame);
+        document.getElementById('suggestButton').addEventListener('click', drawSuggestionCard);
+
+        // 修改滚动控制逻辑
+        document.querySelector('.scroll-left').addEventListener('click', () => {
+            const displayArea = document.querySelector('.display-area');
+            const cardWidth = 300; // 卡片宽度 + 间距
+            displayArea.scrollBy({
+                left: -cardWidth * 3, // 一次滚动三张卡片的距离
+                behavior: 'smooth'
+            });
+        });
+
+        document.querySelector('.scroll-right').addEventListener('click', () => {
+            const displayArea = document.querySelector('.display-area');
+            const cardWidth = 300; // 卡片宽度 + 间距
+            displayArea.scrollBy({
+                left: cardWidth * 3, // 一次滚动三张卡片的距离
+                behavior: 'smooth'
+            });
+        });
+
+        // 初始化游戏
+        initializeGame();
+    </script>
+</body>
+</html>
