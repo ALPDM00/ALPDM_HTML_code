@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>塔罗牌单抽</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* 添加呼吸发光动画 */
+        @keyframes frontBorderGlow {
+            0% {
+                border-color: rgba(94, 92, 252, 0.3);
+                box-shadow: 0 0 20px rgba(94, 92, 252, 0.3),
+                           inset 0 0 20px rgba(94, 92, 252, 0.3);
+            }
+            50% {
+                border-color: rgba(94, 92, 252, 0.8);
+                box-shadow: 0 0 40px rgba(94, 92, 252, 0.5),
+                           inset 0 0 40px rgba(94, 92, 252, 0.5);
+            }
+            100% {
+                border-color: rgba(94, 92, 252, 0.3);
+                box-shadow: 0 0 20px rgba(94, 92, 252, 0.3),
+                           inset 0 0 20px rgba(94, 92, 252, 0.3);
+            }
+        }
+
+        @keyframes backCardGlow {
+            0% {
+                box-shadow: 0 0 20px rgba(94, 92, 252, 0.3);
+                border-color: rgba(94, 92, 252, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(94, 92, 252, 0.6);
+                border-color: rgba(94, 92, 252, 0.8);
+            }
+            100% {
+                box-shadow: 0 0 20px rgba(94, 92, 252, 0.3);
+                border-color: rgba(94, 92, 252, 0.3);
+            }
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #0f0f0f; /* 恢复纯黑色背景 */
+            overflow: hidden;
+            position: relative;
+        }
+
+        .page-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* gap: 30px; */
+            width: 100%;
+        }
+        
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            perspective: 1000px;
+            z-index: 2;
+        }
+        .card{
+            width: 240px;
+            height: 360px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s;
+            cursor: pointer;
+        }
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .card-front {
+            background-color: #5e5cfc;
+            color: rgba(0,0,0,1);
+            font-size: 8em;
+            font-weight: 700;
+            border: 10px solid rgba(94, 92, 252, 0.5);
+            animation: frontBorderGlow 2s ease-in-out infinite;
+            flex-direction: column;
+        }
+        .card-back {
+            background: rgba(94, 92, 252, 0.2);
+            transform: rotateY(180deg);
+            border: 2px solid rgba(94, 92, 252, 0.5);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            color: #fff;
+            animation: backCardGlow 2s ease-in-out infinite;
+            backdrop-filter: blur(5px);
+        }
+        .card-title {
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(94, 92, 252, 0.5);
+        }
+        .card-position {
+            font-size: 1.2rem;
+            padding: 5px 15px;
+            border-radius: 15px;
+            min-width: 80px;
+            text-align: center;
+        }
+        .card-position.upright {
+            color: #ffd700;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+        }
+        .card-position.reversed {
+            color: #ff4d4d;
+            text-shadow: 0 0 5px rgba(255, 77, 77, 0.5);
+        }
+        .card-description {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px 5px;
+        }
+        .card-description::-webkit-scrollbar {
+            width: 4px;
+        }
+        .card-description::-webkit-scrollbar-thumb {
+            background: rgba(94, 92, 252, 0.5);
+            border-radius: 10px;
+        }
+
+        /* 输入区域样式 */
+        .input-section {
+            margin-top: 5px; /* 减少与卡片的间距 */
+            position: relative;
+            width: 240px;
+            height: 140px; /* 增加高度以容纳再来一次按钮 */
+            display: flex;
+            /* flex-direction: column; */
+            align-items: center;
+            justify-content: flex-end; /* 将内容对齐到底部 */
+        }
+
+        .input-container {
+            position: relative;
+            width: 100%;
+        }
+
+        @keyframes inputGlow {
+            0% {
+                border-color: rgba(94, 92, 252, 0.3);
+                box-shadow: 0 0 15px rgba(94, 92, 252, 0.1),
+                           inset 0 0 15px rgba(94, 92, 252, 0.1);
+            }
+            50% {
+                border-color: rgba(94, 92, 252, 0.7);
+                box-shadow: 0 0 30px rgba(94, 92, 252, 0.2),
+                           inset 0 0 30px rgba(94, 92, 252, 0.1);
+            }
+            100% {
+                border-color: rgba(94, 92, 252, 0.3);
+                box-shadow: 0 0 15px rgba(94, 92, 252, 0.1),
+                           inset 0 0 15px rgba(94, 92, 252, 0.1);
+            }
+        }
+
+        .question-input {
+            width: 100%;
+            padding: 12px 45px 12px 15px;
+            font-size: 1.1rem;
+            background: rgba(94, 92, 252, 0.2);
+            color: #fff;
+            border: 2px solid rgba(94, 92, 252, 0.5);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+            animation: inputGlow 3s ease-in-out infinite;
+        }
+
+        .question-input:focus {
+            outline: none;
+            border-color: rgba(94, 92, 252, 0.9);
+            background: rgba(94, 92, 252, 0.3);
+            animation: none;
+            box-shadow: 0 0 25px rgba(94, 92, 252, 0.3),
+                       inset 0 0 25px rgba(94, 92, 252, 0.15);
+        }
+
+        .confirm-button {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 45px;
+            background: transparent;
+            color: rgba(94, 92, 252, 0.8);
+            border: none;
+            border-left: 2px solid rgba(94, 92, 252, 0.3);
+            cursor: pointer;
+            transition: color 0.3s ease, text-shadow 0.3s ease, background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0 8px 8px 0;
+            font-size: 1.2rem;
+        }
+
+        .confirm-button:hover {
+            color: #fff;
+            text-shadow: 0 0 10px rgba(94, 92, 252, 0.8),
+                         0 0 20px rgba(94, 92, 252, 0.4);
+            background-color: rgba(94, 92, 252, 0.1);
+        }
+
+        .draw-button {
+            width: 100%;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            background: rgba(94, 92, 252, 0.2);
+            color: #fff;
+            border: 2px solid rgba(94, 92, 252, 0.5);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            animation: backCardGlow 2s ease-in-out infinite;
+            opacity: 0.7;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        .user-question {
+            color: #fff;
+            font-size: 1.1rem;
+            text-align: center;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.5s ease;
+            min-height: 40px; /* 稍微减少文本区域高度 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-question.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* AI分析按钮样式 */
+        .ai-button {
+            width: 100%;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            background: rgba(94, 92, 252, 0.2);
+            color: #fff;
+            border: 2px solid rgba(94, 92, 252, 0.5);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            animation: backCardGlow 2s ease-in-out infinite;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .ai-button:hover {
+            background: rgba(94, 92, 252, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .ai-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 结果弹窗样式 */
+        .result-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            background: rgba(20, 20, 40, 0.95);
+            border: 2px solid rgba(94, 92, 252, 0.5);
+            border-radius: 12px;
+            padding: 35px;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            backdrop-filter: blur(10px);
+            animation: backCardGlow 2s ease-in-out infinite;
+            overflow: hidden; /* 防止双重滚动条 */
+        }
+
+        .result-modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            color: #fff;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            padding-right: 15px; /* 为滚动条留出空间 */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: rgba(94, 92, 252, 0.5) rgba(20, 20, 40, 0.3); /* Firefox */
+        }
+
+        /* Webkit浏览器的滚动条样式 */
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: rgba(20, 20, 40, 0.3);
+            border-radius: 4px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: rgba(94, 92, 252, 0.5);
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(94, 92, 252, 0.7);
+        }
+
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 32px;
+            height: 32px;
+            background: rgba(94, 92, 252, 0.2);
+            border: 2px solid rgba(94, 92, 252, 0.5);
+            border-radius: 50%;
+            color: #FF5F5F;
+            font-size: 1.6rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            padding-bottom: 2px; /* 微调 X 的垂直位置 */
+            box-shadow: 0 0 10px rgba(94, 92, 252, 0.3);
+        }
+
+        .close-button:hover {
+            color: #FFD700;
+            background: rgba(94, 92, 252, 0.4);
+            border-color: rgba(94, 92, 252, 0.8);
+            transform: rotate(90deg);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 15px rgba(94, 92, 252, 0.5);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+            display: none;
+        }
+
+        .modal-overlay.show {
+            display: block;
+        }
+
+        @keyframes retryButtonGlow {
+            0% {
+                border-color: rgba(255, 95, 95, 0.3);
+                box-shadow: 0 0 20px rgba(255, 95, 95, 0.3),
+                           inset 0 0 20px rgba(255, 95, 95, 0.1);
+            }
+            50% {
+                border-color: rgba(255, 95, 95, 0.8);
+                box-shadow: 0 0 40px rgba(255, 95, 95, 0.5),
+                           inset 0 0 40px rgba(255, 95, 95, 0.2);
+            }
+            100% {
+                border-color: rgba(255, 95, 95, 0.3);
+                box-shadow: 0 0 20px rgba(255, 95, 95, 0.3),
+                           inset 0 0 20px rgba(255, 95, 95, 0.1);
+            }
+        }
+
+        .retry-button {
+            width: 100%;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            background: rgba(255, 95, 95, 0.15);
+            color: #FF5F5F;
+            border: 2px solid rgba(255, 95, 95, 0.5);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: absolute; /* 使用绝对定位 */
+            bottom: -25px; /* 在AI分析按钮下方 */
+            left: 0; /* 与AI分析按钮对齐 */
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards,
+                       retryButtonGlow 2s ease-in-out infinite;
+        }
+
+        .retry-button:hover {
+            background: rgba(255, 95, 95, 0.25);
+            transform: translateY(-2px);
+            color: #FFF;
+        }
+
+        .retry-button.hidden {
+            display: none;
+        }
+
+        .retry-button.fade-out {
+            animation: fadeOut 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="container">
+            <div class="card">
+                <div class="card-front">✧</div>
+                <div class="card-back">
+                    <h3 class="card-title"></h3>
+                    <div class="card-position"></div>
+                    <div class="card-description"></div>
+                </div>
+            </div>
+        </div>
+        <div class="input-section">
+            <div class="user-question"></div>
+            <div class="input-container">
+                <input type="text" class="question-input" placeholder="请输入你想问的问题...">
+                <button class="confirm-button">✓</button>
+            </div>
+            <button class="ai-button hidden">AI分析</button>
+            <button class="retry-button hidden">再来一次</button>
+        </div>
+    </div>
+
+    <!-- 结果弹窗 -->
+    <div class="modal-overlay"></div>
+    <div class="result-modal">
+        <button class="close-button">×</button>
+        <div class="modal-content"></div>
+    </div>
+    
+    <script>
+        // 塔罗牌数据
+        const majorArcana = [
+            { name: "愚者", upright: "新的开始、冒险、自发性", reversed: "鲁莽、冒险、不负责任" },
+            { name: "魔术师", upright: "创造力、技能、意志力", reversed: "操纵、欺骗、才能误用" },
+            { name: "女祭司", upright: "直觉、神秘、内在知识", reversed: "隐藏的动机、表面信息" },
+            { name: "女皇", upright: "丰饶、母性、创造力", reversed: "依赖、过度保护、创造力受阻" },
+            { name: "皇帝", upright: "权威、领导力、控制", reversed: "专制、僵化、过度控制" },
+            { name: "教皇", upright: "传统、信仰、指导", reversed: "教条、限制、叛逆" },
+            { name: "恋人", upright: "选择、爱情、和谐", reversed: "不和谐、失衡、价值观冲突" },
+            { name: "战车", upright: "胜利、意志力、自信", reversed: "自我怀疑、缺乏方向、侵略" },
+            { name: "力量", upright: "勇气、耐心、控制", reversed: "自我怀疑、软弱、缺乏信心" },
+            { name: "隐士", upright: "内省、智慧、孤独", reversed: "孤独、隔离、失去方向" },
+            { name: "命运之轮", upright: "变化、机会、命运", reversed: "坏运气、阻力、不必要的变化" },
+            { name: "正义", upright: "平衡、真理、因果", reversed: "不公平、缺乏责任、不诚实" },
+            { name: "倒吊人", upright: "牺牲、新视角、等待", reversed: "拖延、抵抗、徒劳" },
+            { name: "死神", upright: "结束、转变、重生", reversed: "停滞、抵抗改变、否认" },
+            { name: "节制", upright: "平衡、适度、和谐", reversed: "不平衡、过度、缺乏远见" },
+            { name: "恶魔", upright: "束缚、诱惑、物质主义", reversed: "释放、克服诱惑、分离" },
+            { name: "塔", upright: "突变、崩塌、启示", reversed: "避免毁灭、恐惧改变" },
+            { name: "星星", upright: "希望、灵感、指引", reversed: "绝望、失去信心、沮丧" },
+            { name: "月亮", upright: "幻想、恐惧、直觉", reversed: "混乱、恐惧、误解" },
+            { name: "太阳", upright: "快乐、成功、活力", reversed: "暂时的抑郁、缺乏清晰" },
+            { name: "审判", upright: "重生、觉醒、改变", reversed: "自我怀疑、拒绝改变" },
+            { name: "世界", upright: "完成、圆满、统一", reversed: "未完成、缺乏收尾" }
+        ];
+
+        // 小阿尔卡纳牌组 - 权杖牌组
+        const wands = [
+            { name: "权杖王牌", upright: "新机会、灵感、创造力的开始", reversed: "错失机会、创意受阻" },
+            { name: "权杖二", upright: "规划、决策、平衡", reversed: "犹豫不决、计划失败" },
+            { name: "权杖三", upright: "探索、冒险、扩张", reversed: "限制、延迟、错失机会" },
+            { name: "权杖四", upright: "稳定、休息、成就", reversed: "不稳定、失去平衡" },
+            { name: "权杖五", upright: "竞争、冲突、挑战", reversed: "避免冲突、和平解决" },
+            { name: "权杖六", upright: "胜利、成功、认可", reversed: "失败、缺乏认可" },
+            { name: "权杖七", upright: "勇气、毅力、防御", reversed: "放弃、退缩、缺乏信心" },
+            { name: "权杖八", upright: "行动、速度、变化", reversed: "延迟、挫折、混乱" },
+            { name: "权杖九", upright: "力量、准备、坚持", reversed: "疲惫、防御过度、脆弱" },
+            { name: "权杖十", upright: "负担、压力、责任", reversed: "释放负担、简化生活" },
+            { name: "权杖侍从", upright: "热情、冒险、消息", reversed: "坏消息、冲动、不成熟" },
+            { name: "权杖骑士", upright: "行为、热情、冲动", reversed: "急躁、鲁莽、冲突" },
+            { name: "权杖皇后", upright: "自信、热情、独立", reversed: "嫉妒、自私、缺乏安全感" },
+            { name: "权杖国王", upright: "领导、创造、魅力", reversed: "专制、控制欲强、不成熟" }
+        ];
+
+        // 小阿尔卡纳牌组 - 钱币牌组
+        const pentacles = [
+            { name: "钱币王牌", upright: "机会、繁荣、物质", reversed: "财务损失、错失机会" },
+            { name: "钱币二", upright: "平衡、适应、变化", reversed: "不平衡、财务不稳定" },
+            { name: "钱币三", upright: "技能、工作、合作", reversed: "缺乏合作、技能不足" },
+            { name: "钱币四", upright: "控制、稳定、保守", reversed: "贪婪、吝啬、过度控制" },
+            { name: "钱币五", upright: "困难、贫困、担忧", reversed: "恢复、改善、新希望" },
+            { name: "钱币六", upright: "给予、接受、分享", reversed: "自私、债务、权力不平衡" },
+            { name: "钱币七", upright: "评估、等待、投资", reversed: "缺乏规划、短期思考" },
+            { name: "钱币八", upright: "技能、努力、进展", reversed: "缺乏动力、平庸、匆忙" },
+            { name: "钱币九", upright: "独立、享受、善举", reversed: "依赖、物质主义" },
+            { name: "钱币十", upright: "财富、安全、传统", reversed: "财务损失、家庭冲突" },
+            { name: "钱币侍从", upright: "学习、消费、机会", reversed: "缺乏动力、财务失误" },
+            { name: "钱币骑士", upright: "工作、责任、例行", reversed: "懒惰、拖延、缺乏进步" },
+            { name: "钱币皇后", upright: "实用、丰富、安全", reversed: "物质主义、不安全感" },
+            { name: "钱币国王", upright: "富有、成功、实现", reversed: "贪婪、物质主义、不诚实" }
+        ];
+
+        // 小阿尔卡纳牌组 - 宝剑牌组
+        const swords = [
+            { name: "宝剑王牌", upright: "突破、清晰、真理", reversed: "混乱、误判、沟通问题" },
+            { name: "宝剑二", upright: "选择、平衡、决定", reversed: "犹豫、逃避、信息不足" },
+            { name: "宝剑三", upright: "心痛、分离、悲伤", reversed: "恢复、和解、治愈" },
+            { name: "宝剑四", upright: "休息、恢复、冥想", reversed: "恢复活力、重新参与" },
+            { name: "宝剑五", upright: "失败、冲突、损失", reversed: "和解、妥协、避免冲突" },
+            { name: "宝剑六", upright: "过渡、改变、旅程", reversed: "停滞、未解决的问题" },
+            { name: "宝剑七", upright: "欺骗、策略、秘密", reversed: "诚实、真相暴露" },
+            { name: "宝剑八", upright: "困境、限制、障碍", reversed: "自由、新视角、解脱" },
+            { name: "宝剑九", upright: "焦虑、担忧、恐惧", reversed: "希望、释放恐惧" },
+            { name: "宝剑十", upright: "结束、失败、痛苦", reversed: "恢复、新开始" },
+            { name: "宝剑侍从", upright: "警觉、观察、消息", reversed: "欺骗、恶意、延迟消息" },
+            { name: "宝剑骑士", upright: "行动、思考、冲突", reversed: "冲动、鲁莽、缺乏思考" },
+            { name: "宝剑皇后", upright: "独立、智慧、直接", reversed: "冷酷、无情、操纵" },
+            { name: "宝剑国王", upright: "权威、真理、正义", reversed: "滥用权力、不公正、操纵" }
+        ];
+
+        // 小阿尔卡纳牌组 - 圣杯牌组
+        const cups = [
+            { name: "圣杯王牌", upright: "情感、直觉、新的感情", reversed: "情感空虚、拒绝" },
+            { name: "圣杯二", upright: "平衡、选择、伙伴关系", reversed: "不平衡、分离、冲突" },
+            { name: "圣杯三", upright: "庆祝、欢乐、团体", reversed: "冲突、排斥、过度" },
+            { name: "圣杯四", upright: "沉思、倦怠、停滞", reversed: "新机会、接受邀请" },
+            { name: "圣杯五", upright: "失望、悲伤、遗憾", reversed: "接受、前进、希望" },
+            { name: "圣杯六", upright: "怀旧、回忆、重聚", reversed: "活在当下、放下过去" },
+            { name: "圣杯七", upright: "选择、幻想、迷茫", reversed: "清晰、决定、现实" },
+            { name: "圣杯八", upright: "放弃、转变、追求", reversed: "安于现状、恐惧改变" },
+            { name: "圣杯九", upright: "满足、幸福、愿望实现", reversed: "不满、物质主义" },
+            { name: "圣杯十", upright: "家庭、和谐、圆满", reversed: "家庭冲突、不和谐" },
+            { name: "圣杯侍从", upright: "消息、创意、机会", reversed: "情感不成熟、坏消息" },
+            { name: "圣杯骑士", upright: "浪漫、魅力、提议", reversed: "不切实际、情感操纵" },
+            { name: "圣杯皇后", upright: "慈爱、关怀、同情", reversed: "情绪化、依赖、不安全感" },
+            { name: "圣杯国王", upright: "智慧、艺术、平和", reversed: "情感压抑、冷漠、操纵" }
+        ];
+
+        // 合并所有塔罗牌
+        const tarotCards = [
+            ...majorArcana,
+            ...wands,
+            ...pentacles,
+            ...swords,
+            ...cups
+        ];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            const card = document.querySelector('.card');
+            const questionInput = document.querySelector('.question-input');
+            const confirmButton = document.querySelector('.confirm-button');
+            const aiButton = document.querySelector('.ai-button');
+            const userQuestion = document.querySelector('.user-question');
+            const inputContainer = document.querySelector('.input-container');
+            const modalOverlay = document.querySelector('.modal-overlay');
+            const resultModal = document.querySelector('.result-modal');
+            const modalContent = document.querySelector('.modal-content');
+            const closeButton = document.querySelector('.close-button');
+            let isFlipped = false;
+            let canDraw = false;
+            let currentCard = null;
+            let currentQuestion = '';
+
+            const drawNewCard = () => {
+                if (!canDraw) return;
+                
+                // 正面状态 - 抽取新卡牌
+                currentCard = tarotCards[Math.floor(Math.random() * tarotCards.length)];
+                const isReversed = Math.random() < 0.5;
+                currentCard.position = isReversed ? '逆位' : '正位';
+                currentCard.currentMeaning = isReversed ? currentCard.reversed : currentCard.upright;
+
+                // 更新卡片背面的内容
+                document.querySelector('.card-title').textContent = currentCard.name;
+                document.querySelector('.card-position').textContent = currentCard.position;
+                document.querySelector('.card-position').className = `card-position ${isReversed ? 'reversed' : 'upright'}`;
+                document.querySelector('.card-description').textContent = currentCard.currentMeaning;
+
+                card.classList.add('flipped');
+                isFlipped = true;
+                canDraw = false;
+
+                // 显示AI分析按钮
+                aiButton.textContent = 'AI分析';
+                aiButton.disabled = false;
+                aiButton.classList.remove('hidden');
+            };
+
+            // Markdown 解析函数
+            const parseMarkdown = (text) => {
+                // 处理标题
+                text = text.replace(/### (.*?)\n/g, '<h3 style="color: #ffd700; margin: 15px 0;">$1</h3>');
+                text = text.replace(/## (.*?)\n/g, '<h2 style="color: #ffd700; margin: 15px 0;">$1</h2>');
+                text = text.replace(/# (.*?)\n/g, '<h1 style="color: #ffd700; margin: 15px 0;">$1</h1>');
+
+                // 处理粗体
+                text = text.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #5e5cfc;">$1</strong>');
+
+                // 处理斜体
+                text = text.replace(/\*(.*?)\*/g, '<em style="color: rgba(94, 92, 252, 0.8);">$1</em>');
+
+                // 处理列表
+                text = text.replace(/^\d+\. (.*?)$/gm, '<div style="margin: 10px 0; padding-left: 20px;">• $1</div>');
+                text = text.replace(/^- (.*?)$/gm, '<div style="margin: 10px 0; padding-left: 20px;">• $1</div>');
+
+                // 处理分隔线
+                text = text.replace(/---/g, '<hr style="border: 1px solid rgba(94, 92, 252, 0.3); margin: 15px 0;">');
+
+                // 处理段落
+                text = text.replace(/\n\n/g, '</p><p style="margin: 10px 0;">');
+                text = text.replace(/\n/g, '<br>');
+
+                // 包装在段落标签中
+                text = '<p style="margin: 10px 0;">' + text + '</p>';
+
+                return text;
+            };
+
+            // 重置函数
+            const resetAll = () => {
+                // 翻转卡片回正面
+                card.classList.remove('flipped');
+                isFlipped = false;
+
+                // 清除卡片内容
+                setTimeout(() => {
+                    document.querySelector('.card-title').textContent = '';
+                    document.querySelector('.card-position').textContent = '';
+                    document.querySelector('.card-description').textContent = '';
+                }, 400); // 等待卡片翻转动画完成
+
+                // 重置问题文本
+                userQuestion.textContent = '';
+                userQuestion.classList.remove('show');
+                questionInput.value = '';
+
+                // 显示输入框，隐藏按钮
+                inputContainer.classList.remove('hidden');
+                aiButton.classList.add('hidden');
+                
+                // 隐藏并重置"再来一次"按钮
+                const retryButton = document.querySelector('.retry-button');
+                retryButton.classList.add('fade-out');
+                setTimeout(() => {
+                    retryButton.classList.add('hidden');
+                    retryButton.classList.remove('fade-out');
+                }, 500);
+
+                currentCard = null;
+                currentQuestion = '';
+            };
+
+            const analyzeWithAI = async () => {
+                try {
+                    aiButton.textContent = '等待结果...';
+                    aiButton.disabled = true;
+
+                    // 构建发送给AI的提示
+                    const prompt = `作为一位专业的塔罗牌分析师，请根据以下信息为用户提供详细的分析和建议：
+                    用户的问题：${currentQuestion}
+                    抽到的卡牌：${currentCard.name}（${currentCard.position}）
+                    卡牌含义：${currentCard.currentMeaning}
+                    
+                    请从以下几个方面进行分析：
+                    1. 卡牌与问题的关联性
+                    2. 卡牌在当前处境下的特殊含义
+                    3. 具体的建议和指导
+                    4. 需要注意的方面
+                    
+                    请用温和、积极的语气回答，并在合适的地方添加适当的换行以提高可读性。`;
+
+                    // DeepSeek API 调用
+                    const deepseekConfig = {
+                        model: "deepseek-chat",
+                        messages: [
+                            {
+                                role: "user",
+                                content: prompt
+                            }
+                        ],
+                        temperature: 0.7,
+                        top_p: 0.95,
+                        max_tokens: 1000,
+                    };
+
+                    const response = await fetch('https://api.deepseek.com/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer sk-' // 在这里填入您的API密钥
+                        },
+                        body: JSON.stringify(deepseekConfig)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API请求失败: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    // 假设API返回的响应在data.choices[0].message.content中
+                    const aiResponse = data.choices?.[0]?.message?.content || 
+                    "未能获取有效的AI分析结果";
+                    
+                    // 格式化 Markdown 并存储AI的回复
+                    const formattedResponse = parseMarkdown(aiResponse);
+                    modalContent.innerHTML = formattedResponse;
+                    
+                    // 更新按钮状态
+                    aiButton.textContent = '查看结果';
+                    aiButton.disabled = false;
+                } catch (error) {
+                    console.error('AI分析失败:', error);
+                    aiButton.textContent = 'AI分析失败';
+                    setTimeout(() => {
+                        aiButton.textContent = 'AI分析';
+                        aiButton.disabled = false;
+                    }, 2000);
+                }
+            };
+
+            confirmButton.addEventListener('click', () => {
+                currentQuestion = questionInput.value.trim();
+                if (!currentQuestion) return;
+
+                // 显示问题文本
+                userQuestion.textContent = currentQuestion;
+                userQuestion.classList.add('show');
+
+                // 隐藏输入框和确认按钮，显示抽牌提示按钮
+                inputContainer.classList.add('hidden');
+                aiButton.textContent = '抽一张';
+                aiButton.disabled = false;
+                aiButton.classList.remove('hidden');
+
+                canDraw = true;
+            });
+
+            card.addEventListener('click', () => {
+                if (!isFlipped && canDraw) {
+                    drawNewCard();
+                }
+            });
+
+            aiButton.addEventListener('click', () => {
+                if (aiButton.textContent === 'AI分析') {
+                    analyzeWithAI();
+                } else if (aiButton.textContent === '查看结果') {
+                    modalOverlay.classList.add('show');
+                    resultModal.classList.add('show');
+                    // 在点击查看结果后才显示"再来一次"按钮
+                    const retryButton = document.querySelector('.retry-button');
+                    retryButton.classList.remove('hidden');
+                }
+            });
+
+            closeButton.addEventListener('click', () => {
+                modalOverlay.classList.remove('show');
+                resultModal.classList.remove('show');
+            });
+
+            modalOverlay.addEventListener('click', () => {
+                modalOverlay.classList.remove('show');
+                resultModal.classList.remove('show');
+            });
+
+            // 添加"再来一次"按钮的事件监听
+            const retryButton = document.querySelector('.retry-button');
+            retryButton.addEventListener('click', resetAll);
+        });
+    </script>
+</body>
+</html>
