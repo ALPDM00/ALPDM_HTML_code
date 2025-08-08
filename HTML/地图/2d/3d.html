@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D/3D地图切换</title>
+    
+    <!-- Leaflet (2D地图) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
+    <!-- Cesium (3D地图) -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.95/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.95/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    
+    <style>
+        #mapContainer {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #map2D, #map3D {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        #toggleButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            padding: 10px;
+            background: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* 区域高亮样式 */
+        .highlighted-region {
+            fill-opacity: 0.7;
+            stroke-width: 2;
+            stroke: #ff4400;
+        }
+    </style>
+</head>
+<body>
+    <div id="mapContainer">
+        <div id="map2D"></div>
+        <div id="map3D"></div>
+        <button id="toggleButton">切换 2D/3D</button>
+    </div>
+
+    <script>
+        // 初始化地图状态
+        let is3D = false;
+        
+        // 初始化2D地图
+        const map2D = L.map('map2D').setView([35.86166, 104.195397], 4); // 中国中心位置
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map2D);
+
+        // 初始化3D地图
+        const viewer = new Cesium.Viewer('map3D', {
+            terrainProvider: Cesium.createWorldTerrain(),
+            baseLayerPicker: false,
+            geocoder: false,
+            homeButton: false,
+            sceneModePicker: false,
+            navigationHelpButton: false
+        });
+        
+        // 设置3D地图初始视角
+        viewer.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(104.195397, 35.86166, 5000000)
+        });
+
+        // 隐藏3D地图
+        document.getElementById('map3D').style.display = 'none';
+
+        // 切换按钮事件处理
+        document.getElementById('toggleButton').addEventListener('click', function() {
+            is3D = !is3D;
+            if (is3D) {
+                document.getElementById('map2D').style.display = 'none';
+                document.getElementById('map3D').style.display = 'block';
+            } else {
+                document.getElementById('map2D').style.display = 'block';
+                document.getElementById('map3D').style.display = 'none';
+            }
+        });
+
+        // 添加示例区域（以北京为例）
+        const beijingCoords = [
+            [39.4, 115.7],
+            [39.4, 117.4],
+            [41.6, 117.4],
+            [41.6, 115.7]
+        ];
+
+        // 在2D地图中添加区域
+        const beijingPolygon = L.polygon(beijingCoords, {
+            color: '#3388ff',
+            weight: 2,
+            fillOpacity: 0.2
+        }).addTo(map2D);
+
+        // 添加悬停效果
+        beijingPolygon.on('mouseover', function(e) {
+            e.target.setStyle({
+                fillOpacity: 0.7,
+                color: '#ff4400',
+                weight: 3
+            });
+        });
+
+        beijingPolygon.on('mouseout', function(e) {
+            e.target.setStyle({
+                fillOpacity: 0.2,
+                color: '#3388ff',
+                weight: 2
+            });
+        });
+
+        // 在3D地图中添加区域
+        const beijingPolygon3D = viewer.entities.add({
+            name: '北京',
+            polygon: {
+                hierarchy: Cesium.Cartesian3.fromDegreesArray([
+                    115.7, 39.4,
+                    117.4, 39.4,
+                    117.4, 41.6,
+                    115.7, 41.6
+                ]),
+                material: new Cesium.ColorMaterialProperty(Cesium.Color.BLUE.withAlpha(0.2)),
+                outline: true,
+                outlineColor: Cesium.Color.BLUE
+            }
+        });
+
+        // 3D地图悬停效果
+        viewer.screenSpaceEventHandler.setInputAction(function(movement) {
+            const pickedObject = viewer.scene.pick(movement.endPosition);
+            if (Cesium.defined(pickedObject) && pickedObject.id === beijingPolygon3D) {
+                beijingPolygon3D.polygon.material = Cesium.Color.RED.withAlpha(0.7);
+                beijingPolygon3D.polygon.outlineColor = Cesium.Color.RED;
+            } else {
+                beijingPolygon3D.polygon.material = Cesium.Color.BLUE.withAlpha(0.2);
+                beijingPolygon3D.polygon.outlineColor = Cesium.Color.BLUE;
+            }
+        }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+    </script>
+</body>
+</html>
